@@ -215,7 +215,6 @@ struct ExperienceListView: View {
     }
 }
 
-
 // MARK: - Preview
 #Preview {
     NavigationStack {

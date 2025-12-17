@@ -43,34 +43,34 @@ struct PhotoPickerView: View {
                     .scaledToFill()
                     .frame(width: 100, height: 100)
                     .clipShape(Circle())
+                    .onTapGesture {
+                        showOptions = true
+                    }
             } else {
-                // Placeholder
-                Circle()
-                    .fill(AppColors.surface)
-                    .frame(width: 100, height: 100)
-                    .overlay(
-                        Image(systemName: "camera.fill")
-                            .font(.system(size: 32))
-                            .foregroundStyle(AppColors.textSecondary)
-                    )
-            }
-            
-            // Camera Badge
-            if photoData == nil {
-                Circle()
-                    .fill(AppColors.primary)
-                    .frame(width: 28, height: 28)
-                    .overlay(
-                        Image(systemName: "plus")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(AppColors.textOnPrimary)
-                    )
-                    .offset(x: 35, y: 35)
-            }
-        }
-        .onTapGesture {
-            if photoData != nil {
-                showOptions = true
+                // Placeholder - Wrapped in PhotosPicker for direct selection
+                PhotosPicker(selection: $selectedItem, matching: .images) {
+                    ZStack {
+                        Circle()
+                            .fill(AppColors.surface)
+                            .frame(width: 100, height: 100)
+                            .overlay(
+                                Image(systemName: "camera.fill")
+                                    .font(.system(size: 32))
+                                    .foregroundStyle(AppColors.textSecondary)
+                            )
+                        
+                        // Camera Badge
+                        Circle()
+                            .fill(AppColors.primary)
+                            .frame(width: 28, height: 28)
+                            .overlay(
+                                Image(systemName: "plus")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundStyle(AppColors.textOnPrimary)
+                            )
+                            .offset(x: 35, y: 35)
+                    }
+                }
             }
         }
     }

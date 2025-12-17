@@ -48,7 +48,10 @@ struct HomeView: View {
             CreateCVFlowView()
         }
         .sheet(item: $selectedCVForEdit) { cv in
-            PersonalInfoMainView(cv: cv)
+            // ✅ FIX: Wrap in NavigationStack for proper navigation
+            NavigationStack {
+                PersonalInfoMainView(cv: cv)
+            }
         }
         .sheet(isPresented: $showProfile) {
             ProfileView()

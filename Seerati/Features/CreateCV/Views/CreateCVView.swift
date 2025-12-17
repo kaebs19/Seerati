@@ -24,8 +24,8 @@ struct CreateCVFlowView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Progress Indicator
-                StepIndicator(totalSteps: 3, currentStep: 1)
+                // Progress Indicator - Step 0 (naming step)
+                StepIndicator(totalSteps: 4, currentStep: 0)
                     .padding(.horizontal, AppSpacing.screenHorizontal)
                     .padding(.top, AppSpacing.md)
                 
@@ -68,12 +68,13 @@ struct CreateCVFlowView: View {
                 }
             }
             .toolbarBackground(AppColors.background, for: .navigationBar)
+            // ✅ FIX: navigationDestination INSIDE NavigationStack
+            .navigationDestination(isPresented: $showPersonalInfo) {
+                if let cv = viewModel.createdCV {
+                    PersonalInfoView(cv: cv)
+                }
+            }
         }
-        .navigationDestination(isPresented: $showPersonalInfo) {
-                   if let cv = viewModel.createdCV {
-                       PersonalInfoMainView(cv: cv)
-                   }
-               }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 isNameFocused = true
@@ -156,7 +157,6 @@ struct CreateCVFlowView: View {
         .background(AppColors.background)
     }
 }
-
 
 // MARK: - Preview
 #Preview {

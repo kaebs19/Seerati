@@ -44,7 +44,7 @@ struct SideMenuView: View {
                 Spacer()
             }
         }
-        .allowsHitTesting(isPresented)  // ✅ أضف هذا السطر
+        .allowsHitTesting(isPresented) // ✅ Fix: Allow touches to pass through when hidden
         .animation(.easeInOut(duration: 0.25), value: isPresented)
         .sheet(isPresented: $showLanguageSheet) {
             LanguagePickerSheet()

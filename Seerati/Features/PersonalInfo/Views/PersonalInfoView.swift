@@ -5,12 +5,15 @@
 //  Path: Seerati/Features/PersonalInfo/Views/PersonalInfoView.swift
 //
 //  ─────────────────────────────────────────────
-//  AR: شاشة إدخال المعلومات الشخصية - الخطوة الثانية
-//  EN: Personal information input screen - step two
+//  AR: شاشة إدخال المعلومات الشخصية - الخطوة الأولى
+//  EN: Personal information input screen - step one
 //  ─────────────────────────────────────────────
 
 import SwiftUI
 import PhotosUI
+
+// MARK: - Type Alias for compatibility
+typealias PersonalInfoView = PersonalInfoMainView
 
 // MARK: - Personal Info View
 struct PersonalInfoMainView: View {
@@ -34,9 +37,6 @@ struct PersonalInfoMainView: View {
             // Content
             ScrollView {
                 VStack(spacing: AppSpacing.xl) {
-                    // Title
-                    titleSection
-                    
                     // Photo
                     photoSection
                     
@@ -70,8 +70,9 @@ struct PersonalInfoMainView: View {
                 await viewModel.loadPhoto()
             }
         }
+        // ✅ FIX: Use actual ExperienceListView
         .navigationDestination(isPresented: $showExperience) {
-            ExperienceListMainView(cv: viewModel.cv)
+            ExperienceListView(cv: viewModel.cv)
         }
         .onChange(of: viewModel.isSaved) { _, isSaved in
             if isSaved {
@@ -104,29 +105,39 @@ struct PersonalInfoMainView: View {
         .padding(.vertical, AppSpacing.md)
     }
     
-    // MARK: - Title Section
-    private var titleSection: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.xs) {
-            Text(PersonalInfoStrings.letsStart)
-                .font(AppFonts.title())
-                .foregroundStyle(AppColors.textPrimary)
-            
-            Text(PersonalInfoStrings.addContactDetails)
-                .font(AppFonts.body())
-                .foregroundStyle(AppColors.textSecondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-    
     // MARK: - Photo Section
     private var photoSection: some View {
-        PhotoPickerView(
-            photoData: $viewModel.photoData,
-            selectedItem: $viewModel.selectedPhotoItem,
-            onRemove: {
-                viewModel.removePhoto()
+        VStack(spacing: AppSpacing.sm) {
+            // Photo Circle
+            ZStack {
+                if let data = viewModel.photoData, let uiImage = UIImage(data: data) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 100, height: 100)
+                        .clipShape(Circle())
+                } else {
+                    Circle()
+                        .fill(AppColors.surface)
+                        .frame(width: 100, height: 100)
+                        .overlay(
+                            Image(systemName: "camera.fill")
+                                .font(.system(size: 32))
+                                .foregroundStyle(AppColors.textSecondary)
+                        )
+                }
             }
-        )
+            
+            // Photo Picker Button
+            PhotosPicker(
+                selection: $viewModel.selectedPhotoItem,
+                matching: .images
+            ) {
+                Text(viewModel.photoData != nil ? PersonalInfoStrings.changePhoto : PersonalInfoStrings.uploadPhoto)
+                    .font(AppFonts.subheadline(weight: .medium))
+                    .foregroundStyle(AppColors.primary)
+            }
+        }
     }
     
     // MARK: - Form Section
@@ -179,7 +190,7 @@ struct PersonalInfoMainView: View {
                 textContentType: .fullStreetAddress
             )
             
-            // Website
+            // Website/LinkedIn
             InputField(
                 label: PersonalInfoStrings.website,
                 placeholder: PersonalInfoStrings.websitePlaceholder,
@@ -214,14 +225,6 @@ struct PersonalInfoMainView: View {
         .padding(.horizontal, AppSpacing.screenHorizontal)
         .padding(.vertical, AppSpacing.lg)
         .background(AppColors.background)
-    }
-}
-
-// MARK: - Placeholder for next step
-struct ExperienceListMainView: View {
-    let cv: CVData
-    var body: some View {
-        Text("Experience List")
     }
 }
 
