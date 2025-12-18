@@ -143,8 +143,7 @@ final class HomeViewModel {
             phone: cv.phone,
             location: cv.location,
             website: cv.website,
-            photoData: cv.photoData,
-            summary: cv.summary
+            summary: cv.summary, photoData: cv.photoData
         )
         
         do {

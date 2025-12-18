@@ -22,6 +22,8 @@ struct PersonalInfoMainView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel: PersonalInfoViewModel
     @State private var showExperience = false
+    @State private var showAdditionalInfo = false
+
     
     // MARK: - Init
     init(cv: CVData) {
@@ -199,8 +201,47 @@ struct PersonalInfoMainView: View {
                 keyboardType: .URL,
                 textContentType: .URL
             )
+            
+            // ✅ رابط المعلومات الإضافية
+            additionalInfoLink
         }
     }
+
+    private var additionalInfoLink: some View {
+        Button {
+            showAdditionalInfo = true
+        } label: {
+            HStack {
+                Image(systemName: "person.text.rectangle.fill")
+                    .foregroundStyle(AppColors.primary)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("معلومات إضافية")
+                        .font(AppFonts.body(weight: .medium))
+                        .foregroundStyle(AppColors.textPrimary)
+                    
+                    Text("تاريخ الميلاد، الجنسية، الحالة الاجتماعية...")
+                        .font(AppFonts.caption())
+                        .foregroundStyle(AppColors.textSecondary)
+                }
+                
+                Spacer()
+                
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 12))
+                    .foregroundStyle(AppColors.textSecondary)
+            }
+            .padding()
+            .background(AppColors.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .sheet(isPresented: $showAdditionalInfo) {
+            NavigationStack {
+                AdditionalPersonalInfoView(cv: viewModel.cv)
+            }
+        }
+    }
+
     
     // MARK: - Bottom Section
     private var bottomSection: some View {

@@ -4,10 +4,10 @@
 //
 //  Path: Seerati/Features/CVPreview/Views/CVPreviewView.swift
 //
-//  ─────────────────────────────────────────────
-//  AR: شاشة معاينة السيرة الذاتية
-//  EN: CV Preview screen
-//  ─────────────────────────────────────────────
+//  ─────────────────────────────────────────────────
+//  AR: شاشة معاينة السيرة الذاتية المحسّنة
+//  EN: Enhanced CV Preview screen
+//  ─────────────────────────────────────────────────
 
 import SwiftUI
 
@@ -28,7 +28,7 @@ struct CVPreviewView: View {
         NavigationStack {
             ZStack {
                 // Background
-                Color(hex: "F0F0F0")
+                Color(hex: "E8E8E8")
                     .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
@@ -47,6 +47,7 @@ struct CVPreviewView: View {
                         dismiss()
                     } label: {
                         Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .medium))
                             .foregroundStyle(AppColors.textPrimary)
                     }
                 }
@@ -66,13 +67,11 @@ struct CVPreviewView: View {
         }
         .sheet(isPresented: $viewModel.showShareSheet) {
             if let pdfData = viewModel.generatedPDFData {
-                ShareSheet(activityItems: [pdfData])
+                ShareSheet(activityItems: viewModel.getShareItems())
             }
         }
         .sheet(isPresented: $viewModel.showPremiumPage) {
-            PremiumPlansSheet { yearly in
-                await viewModel.purchaseManager.purchasePremium(yearly: yearly)
-            }
+            PremiumUpgradeSheet()
         }
         .alert(CVPreviewStrings.exportLimitReached, isPresented: $viewModel.showExportLimitAlert) {
             Button(CVPreviewStrings.upgrade) {
@@ -96,18 +95,26 @@ struct CVPreviewView: View {
     
     // MARK: - Preview Area
     private var previewArea: some View {
-        ScrollView([.horizontal, .vertical], showsIndicators: true) {
-            VStack {
-                // CV Template
-                SwissMinimalTemplate(
-                    cv: viewModel.cv,
-                    showWatermark: viewModel.shouldAddWatermark
+        GeometryReader { geometry in
+            ScrollView([.horizontal, .vertical], showsIndicators: false) {
+                VStack {
+                    // CV Template with shadow
+                    SwissMinimalTemplate(
+                        cv: viewModel.cv,
+                        showWatermark: viewModel.shouldAddWatermark
+                    )
+                    .scaleEffect(viewModel.scale)
+                    .shadow(color: .black.opacity(0.2), radius: 15, x: 0, y: 8)
+                    .frame(
+                        width: 595 * viewModel.scale,
+                        height: 842 * viewModel.scale
+                    )
+                }
+                .frame(
+                    minWidth: geometry.size.width,
+                    minHeight: geometry.size.height
                 )
-                .scaleEffect(viewModel.scale)
-                .shadow(color: .black.opacity(0.15), radius: 10, x: 0, y: 5)
-                .padding(20)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
     
@@ -122,22 +129,46 @@ struct CVPreviewView: View {
             // Actions
             HStack(spacing: 12) {
                 // Change Template
-                SecondaryActionButton(
-                    icon: "square.on.square",
-                    title: CVPreviewStrings.changeTemplate
-                ) {
+                Button {
                     viewModel.showTemplateSelector = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "square.on.square")
+                            .font(.system(size: 14))
+                        Text(CVPreviewStrings.changeTemplate)
+                            .font(AppFonts.caption(weight: .medium))
+                    }
+                    .foregroundStyle(AppColors.textPrimary)
+                    .frame(height: 48)
+                    .padding(.horizontal, 14)
+                    .background(AppColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 
                 // Export PDF
-                PrimaryActionButton(
-                    icon: "arrow.down.doc.fill",
-                    title: CVPreviewStrings.exportPDF,
-                    remainingExports: viewModel.isPremium ? nil : viewModel.remainingExports
-                ) {
+                Button {
                     Task {
                         await viewModel.exportPDF()
                     }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "arrow.down.doc.fill")
+                            .font(.system(size: 16, weight: .medium))
+                        
+                        Text(CVPreviewStrings.exportPDF)
+                            .font(AppFonts.button())
+                        
+                        if !viewModel.isPremium {
+                            Text("(\(viewModel.remainingExports))")
+                                .font(AppFonts.caption())
+                                .foregroundStyle(.white.opacity(0.7))
+                        }
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(AppColors.primary)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
             .padding(.horizontal, AppSpacing.screenHorizontal)
@@ -157,11 +188,13 @@ struct CVPreviewView: View {
             
             Spacer()
             
-            Button(CVPreviewStrings.upgrade) {
+            Button {
                 viewModel.showPremiumPage = true
+            } label: {
+                Text(CVPreviewStrings.upgrade)
+                    .font(AppFonts.caption(weight: .semibold))
+                    .foregroundStyle(AppColors.primary)
             }
-            .font(AppFonts.caption(weight: .semibold))
-            .foregroundStyle(AppColors.primary)
         }
         .foregroundStyle(AppColors.warning)
         .padding(.horizontal, AppSpacing.md)
@@ -171,23 +204,25 @@ struct CVPreviewView: View {
     
     // MARK: - Zoom Controls
     private var zoomControls: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             Button {
                 viewModel.zoomOut()
             } label: {
                 Image(systemName: "minus.magnifyingglass")
+                    .font(.system(size: 14))
                     .foregroundStyle(AppColors.textPrimary)
             }
             
             Text("\(Int(viewModel.scale * 100))%")
-                .font(AppFonts.caption(weight: .medium))
+                .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(AppColors.textSecondary)
-                .frame(width: 40)
+                .frame(width: 38)
             
             Button {
                 viewModel.zoomIn()
             } label: {
                 Image(systemName: "plus.magnifyingglass")
+                    .font(.system(size: 14))
                     .foregroundStyle(AppColors.textPrimary)
             }
         }
@@ -211,61 +246,6 @@ struct CVPreviewView: View {
             .padding(32)
             .background(.ultraThinMaterial)
             .clipShape(RoundedRectangle(cornerRadius: 16))
-        }
-    }
-}
-
-// MARK: - Primary Action Button
-struct PrimaryActionButton: View {
-    let icon: String
-    let title: String
-    var remainingExports: Int? = nil
-    var action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .medium))
-                
-                Text(title)
-                    .font(AppFonts.button())
-                
-                if let remaining = remainingExports {
-                    Text("(\(remaining))")
-                        .font(AppFonts.caption())
-                        .foregroundStyle(.white.opacity(0.7))
-                }
-            }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 50)
-            .background(AppColors.primary)
-            .clipShape(RoundedRectangle(cornerRadius: AppSpacing.radiusMedium))
-        }
-    }
-}
-
-// MARK: - Secondary Action Button
-struct SecondaryActionButton: View {
-    let icon: String
-    let title: String
-    var action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 14))
-                
-                Text(title)
-                    .font(AppFonts.caption(weight: .medium))
-            }
-            .foregroundStyle(AppColors.textPrimary)
-            .frame(height: 50)
-            .padding(.horizontal, 16)
-            .background(AppColors.surface)
-            .clipShape(RoundedRectangle(cornerRadius: AppSpacing.radiusMedium))
         }
     }
 }
@@ -332,6 +312,19 @@ struct TemplateSelectionCard: View {
                             RoundedRectangle(cornerRadius: 8)
                                 .stroke(isSelected ? AppColors.primary : Color.clear, lineWidth: 3)
                         )
+                        .overlay(
+                            // Mini template preview
+                            VStack(alignment: .leading, spacing: 4) {
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(Color.white.opacity(0.3))
+                                    .frame(width: 60, height: 8)
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(Color.white.opacity(0.2))
+                                    .frame(width: 40, height: 4)
+                                Spacer()
+                            }
+                            .padding(12)
+                        )
                     
                     // Premium Badge
                     if template.isPremium && !template.isAvailable {
@@ -378,6 +371,86 @@ struct ShareSheet: UIViewControllerRepresentable {
     }
     
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+// MARK: - Premium Upgrade Sheet
+struct PremiumUpgradeSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                // Icon
+                Image(systemName: "crown.fill")
+                    .font(.system(size: 60))
+                    .foregroundStyle(Color.orange)
+                    .padding(.top, 40)
+                
+                // Title
+                Text("Upgrade to Premium")
+                    .font(.system(size: 24, weight: .bold))
+                
+                // Features
+                VStack(alignment: .leading, spacing: 12) {
+                    featureRow(icon: "infinity", text: "Unlimited PDF Exports")
+                    featureRow(icon: "doc.text", text: "No Watermark")
+                    featureRow(icon: "rectangle.stack", text: "All Premium Templates")
+                    featureRow(icon: "star.fill", text: "Priority Support")
+                }
+                .padding(.horizontal, 32)
+                
+                Spacer()
+                
+                // Buttons
+                VStack(spacing: 12) {
+                    Button {
+                        // TODO: Purchase
+                        dismiss()
+                    } label: {
+                        Text("Upgrade Now")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.orange)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    
+                    Button {
+                        dismiss()
+                    } label: {
+                        Text("Maybe Later")
+                            .font(.system(size: 14))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 32)
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+    }
+    
+    private func featureRow(icon: String, text: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundStyle(Color.orange)
+                .frame(width: 24)
+            Text(text)
+                .font(.system(size: 15))
+            Spacer()
+        }
+    }
 }
 
 // MARK: - Preview

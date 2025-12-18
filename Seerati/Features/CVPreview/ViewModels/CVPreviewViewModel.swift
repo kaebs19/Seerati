@@ -4,10 +4,10 @@
 //
 //  Path: Seerati/Features/CVPreview/ViewModels/CVPreviewViewModel.swift
 //
-//  ─────────────────────────────────────────────
+//  ─────────────────────────────────────────────────
 //  AR: إدارة حالة ومنطق معاينة السيرة
 //  EN: CV Preview state and logic management
-//  ─────────────────────────────────────────────
+//  ─────────────────────────────────────────────────
 
 import SwiftUI
 import PDFKit
@@ -25,7 +25,7 @@ final class CVPreviewViewModel {
     var selectedTemplate: Template
     
     /// مقياس العرض
-    var scale: CGFloat = 1.0
+    var scale: CGFloat = 0.55
     
     /// حالة التصدير
     var isExporting: Bool = false
@@ -51,11 +51,16 @@ final class CVPreviewViewModel {
     /// PDF المُنشأ
     var generatedPDFData: Data?
     
+    /// URL الملف المحفوظ
+    var savedPDFURL: URL?
+    
     /// إظهار Share Sheet
     var showShareSheet: Bool = false
     
     // MARK: - Managers
     let purchaseManager = PurchaseManager.shared
+    private let pdfService = PDFExportService.shared
+    
     // MARK: - Init
     init(cv: CVData, template: Template? = nil) {
         self.cv = cv
@@ -109,8 +114,12 @@ final class CVPreviewViewModel {
         
         do {
             // إنشاء PDF
-            let pdfData = try await generatePDF()
+            let pdfData = try pdfService.exportPDF(cv: cv, addWatermark: shouldAddWatermark)
             generatedPDFData = pdfData
+            
+            // حفظ الملف
+            let fileName = cv.cvName.isEmpty ? "CV_\(Date().timeIntervalSince1970)" : cv.cvName.replacingOccurrences(of: " ", with: "_")
+            savedPDFURL = try pdfService.savePDFToFiles(data: pdfData, fileName: fileName)
             
             // تسجيل التصدير
             purchaseManager.recordExport()
@@ -123,28 +132,6 @@ final class CVPreviewViewModel {
             errorMessage = error.localizedDescription
             showExportError = true
         }
-    }
-    
-    /// إنشاء PDF
-    private func generatePDF() async throws -> Data {
-        // TODO: تنفيذ إنشاء PDF الفعلي
-        // حالياً نُرجع بيانات وهمية
-        
-        try await Task.sleep(nanoseconds: 1_500_000_000) // محاكاة
-        
-        let pdfRenderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 595, height: 842))
-        
-        let data = pdfRenderer.pdfData { context in
-            context.beginPage()
-            
-            // هذا placeholder - سيتم استبداله بالقالب الفعلي
-            let attrs: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 24, weight: .bold)
-            ]
-            cv.fullName.draw(at: CGPoint(x: 50, y: 50), withAttributes: attrs)
-        }
-        
-        return data
     }
     
     /// تغيير القالب
@@ -162,22 +149,37 @@ final class CVPreviewViewModel {
     /// تكبير
     func zoomIn() {
         withAnimation(.easeInOut(duration: 0.2)) {
-            scale = min(scale + 0.25, 2.0)
+            scale = min(scale + 0.1, 1.5)
         }
     }
     
     /// تصغير
     func zoomOut() {
         withAnimation(.easeInOut(duration: 0.2)) {
-            scale = max(scale - 0.25, 0.5)
+            scale = max(scale - 0.1, 0.3)
         }
     }
     
     /// ملائمة الشاشة
     func fitToScreen() {
         withAnimation(.easeInOut(duration: 0.2)) {
-            scale = 1.0
+            scale = 0.55
         }
+    }
+    
+    /// مشاركة PDF
+    func getShareItems() -> [Any] {
+        var items: [Any] = []
+        
+        if let pdfData = generatedPDFData {
+            items.append(pdfData)
+        }
+        
+        if let url = savedPDFURL {
+            items.append(url)
+        }
+        
+        return items
     }
 }
 

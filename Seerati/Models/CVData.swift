@@ -4,35 +4,25 @@
 //
 //  Path: Seerati/Models/CVData.swift
 //
+//  ─────────────────────────────────────────────────
+//  AR: نموذج بيانات السيرة الذاتية المحدث
+//  EN: Updated CV Data Model with Personal Info
+//  ─────────────────────────────────────────────────
 
 import Foundation
 import SwiftData
 
 // MARK: - CV Data Model
-/// النموذج الرئيسي للسيرة الذاتية
 @Model
 final class CVData {
     
-    // MARK: - Properties
-    /// المعرف الفريد
+    // MARK: - Basic Properties
     var id: UUID
-    
-    /// اسم السيرة الذاتية (للمرجع الشخصي)
     var cvName: String
-    
-    /// تاريخ الإنشاء
     var createdAt: Date
-    
-    /// تاريخ آخر تعديل
     var updatedAt: Date
     
-    /// القالب المستخدم
-    var templateId: String
-    
-    /// لون القالب المخصص (اختياري)
-    var customColor: String?
-    
-    // MARK: - Personal Info
+    // MARK: - Personal Information
     /// الاسم الكامل
     var fullName: String
     
@@ -48,52 +38,80 @@ final class CVData {
     /// الموقع (المدينة، البلد)
     var location: String
     
-    /// الموقع الإلكتروني / LinkedIn
+    /// الموقع الإلكتروني
     var website: String
     
     /// رابط LinkedIn
     var linkedin: String
     
-    /// الصورة الشخصية (Data)
+    /// الملخص الشخصي
+    var summary: String
+    
+    /// الصورة الشخصية
     @Attribute(.externalStorage)
     var photoData: Data?
     
-    /// النبذة الشخصية
-    var summary: String
+    // ═══════════════════════════════════════════
+    // MARK: - ✅ NEW: Additional Personal Info
+    // ═══════════════════════════════════════════
+    
+    /// تاريخ الميلاد
+    var dateOfBirth: Date?
+    
+    /// الجنسية
+    var nationality: String
+    
+    /// الجنس
+    var genderRaw: String
+    
+    /// الحالة الاجتماعية
+    var maritalStatusRaw: String
+    
+    /// رخصة القيادة
+    var drivingLicenseRaw: String
+    
+    /// حالة الإقامة/التأشيرة
+    var visaStatusRaw: String
+    
+    // ═══════════════════════════════════════════
+    // MARK: - ✅ NEW: Visibility Settings
+    // ═══════════════════════════════════════════
+    
+    /// إظهار تاريخ الميلاد
+    var showDateOfBirth: Bool
+    
+    /// إظهار الجنسية
+    var showNationality: Bool
+    
+    /// إظهار الجنس
+    var showGender: Bool
+    
+    /// إظهار الحالة الاجتماعية
+    var showMaritalStatus: Bool
+    
+    /// إظهار رخصة القيادة
+    var showDrivingLicense: Bool
+    
+    /// إظهار حالة الإقامة
+    var showVisaStatus: Bool
     
     // MARK: - Relationships
-    /// الخبرات العملية
     @Relationship(deleteRule: .cascade, inverse: \Experience.cv)
     var experiences: [Experience]
     
-    /// التعليم
     @Relationship(deleteRule: .cascade, inverse: \Education.cv)
     var educations: [Education]
     
-    /// المهارات
     @Relationship(deleteRule: .cascade, inverse: \Skill.cv)
     var skills: [Skill]
     
-    /// اللغات
-    @Relationship(deleteRule: .cascade, inverse: \LanguageSkill.cv)
-    var languages: [LanguageSkill]
-    
-    /// الشهادات
-    @Relationship(deleteRule: .cascade, inverse: \Certificate.cv)
-    var certificates: [Certificate]
-    
-    /// المشاريع
-    @Relationship(deleteRule: .cascade, inverse: \Project.cv)
-    var projects: [Project]
+    // MARK: - Template
+    var selectedTemplateId: String
     
     // MARK: - Init
     init(
         id: UUID = UUID(),
         cvName: String = "",
-        createdAt: Date = Date(),
-        updatedAt: Date = Date(),
-        templateId: String = "swiss_minimal",
-        customColor: String? = nil,
         fullName: String = "",
         jobTitle: String = "",
         email: String = "",
@@ -101,21 +119,29 @@ final class CVData {
         location: String = "",
         website: String = "",
         linkedin: String = "",
-        photoData: Data? = nil,
         summary: String = "",
-        experiences: [Experience] = [],
-        educations: [Education] = [],
-        skills: [Skill] = [],
-        languages: [LanguageSkill] = [],
-        certificates: [Certificate] = [],
-        projects: [Project] = []
+        photoData: Data? = nil,
+        // New fields
+        dateOfBirth: Date? = nil,
+        nationality: String = "",
+        gender: Gender = .preferNotToSay,
+        maritalStatus: MaritalStatus = .preferNotToSay,
+        drivingLicense: DrivingLicense = .none,
+        visaStatus: VisaStatus = .citizen,
+        // Visibility
+        showDateOfBirth: Bool = true,
+        showNationality: Bool = true,
+        showGender: Bool = false,
+        showMaritalStatus: Bool = false,
+        showDrivingLicense: Bool = false,
+        showVisaStatus: Bool = false,
+        // Other
+        selectedTemplateId: String = "swiss_minimal"
     ) {
         self.id = id
         self.cvName = cvName
-        self.createdAt = createdAt
-        self.updatedAt = updatedAt
-        self.templateId = templateId
-        self.customColor = customColor
+        self.createdAt = Date()
+        self.updatedAt = Date()
         self.fullName = fullName
         self.jobTitle = jobTitle
         self.email = email
@@ -123,84 +149,125 @@ final class CVData {
         self.location = location
         self.website = website
         self.linkedin = linkedin
-        self.photoData = photoData
         self.summary = summary
-        self.experiences = experiences
-        self.educations = educations
-        self.skills = skills
-        self.languages = languages
-        self.certificates = certificates
-        self.projects = projects
+        self.photoData = photoData
+        // New fields
+        self.dateOfBirth = dateOfBirth
+        self.nationality = nationality
+        self.genderRaw = gender.rawValue
+        self.maritalStatusRaw = maritalStatus.rawValue
+        self.drivingLicenseRaw = drivingLicense.rawValue
+        self.visaStatusRaw = visaStatus.rawValue
+        // Visibility
+        self.showDateOfBirth = showDateOfBirth
+        self.showNationality = showNationality
+        self.showGender = showGender
+        self.showMaritalStatus = showMaritalStatus
+        self.showDrivingLicense = showDrivingLicense
+        self.showVisaStatus = showVisaStatus
+        // Other
+        self.selectedTemplateId = selectedTemplateId
+        self.experiences = []
+        self.educations = []
+        self.skills = []
     }
     
-    // MARK: - Methods
-    /// تحديث تاريخ التعديل
+    // MARK: - Computed Properties for Enums
+    
+    var gender: Gender {
+        get { Gender(rawValue: genderRaw) ?? .preferNotToSay }
+        set { genderRaw = newValue.rawValue }
+    }
+    
+    var maritalStatus: MaritalStatus {
+        get { MaritalStatus(rawValue: maritalStatusRaw) ?? .preferNotToSay }
+        set { maritalStatusRaw = newValue.rawValue }
+    }
+    
+    var drivingLicense: DrivingLicense {
+        get { DrivingLicense(rawValue: drivingLicenseRaw) ?? .none }
+        set { drivingLicenseRaw = newValue.rawValue }
+    }
+    
+    var visaStatus: VisaStatus {
+        get { VisaStatus(rawValue: visaStatusRaw) ?? .citizen }
+        set { visaStatusRaw = newValue.rawValue }
+    }
+    
+    // MARK: - Age Calculation
+    var age: Int? {
+        guard let dob = dateOfBirth else { return nil }
+        let calendar = Calendar.current
+        let ageComponents = calendar.dateComponents([.year], from: dob, to: Date())
+        return ageComponents.year
+    }
+    
+    /// تاريخ الميلاد منسق
+    var formattedDateOfBirth: String {
+        guard let dob = dateOfBirth else { return "" }
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.locale = Locale(identifier: "ar")
+        return formatter.string(from: dob)
+    }
+    
+    // MARK: - Update Timestamp
+    func markAsUpdated() {
+        self.updatedAt = Date()
+    }
+    
+    // MARK: - Computed Properties
+
+    /// تحديث التاريخ (alias لـ markAsUpdated)
     func touch() {
-        updatedAt = Date()
+        self.updatedAt = Date()
     }
-    
-    /// نسبة اكتمال السيرة الذاتية
-    var completionPercentage: Int {
-        var score = 0
-        var total = 0
-        
-        // Personal Info (40%)
-        total += 8
-        if !fullName.isEmpty { score += 1 }
-        if !jobTitle.isEmpty { score += 1 }
-        if !email.isEmpty { score += 1 }
-        if !phone.isEmpty { score += 1 }
-        if !location.isEmpty { score += 1 }
-        if photoData != nil { score += 1 }
-        if !summary.isEmpty { score += 2 }
-        
-        // Experience (25%)
-        total += 2
-        if !experiences.isEmpty { score += 2 }
-        
-        // Education (15%)
-        total += 1
-        if !educations.isEmpty { score += 1 }
-        
-        // Skills (15%)
-        total += 1
-        if !skills.isEmpty { score += 1 }
-        
-        // Languages (5%)
-        total += 1
-        if !languages.isEmpty { score += 1 }
-        
-        return total > 0 ? (score * 100) / total : 0
+
+    /// معرف القالب (alias لـ selectedTemplateId)
+    var templateId: String {
+        get { selectedTemplateId }
+        set { selectedTemplateId = newValue }
     }
-    
-    /// هل السيرة الذاتية مكتملة؟
-    var isComplete: Bool {
-        completionPercentage >= 80
+
+    /// نص آخر تعديل
+    var lastEditedText: String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.locale = Locale(identifier: "ar")
+        formatter.unitsStyle = .short
+        return formatter.localizedString(for: updatedAt, relativeTo: Date())
+    }
+
+    /// نص تاريخ الإنشاء
+    var createdAtText: String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.locale = Locale(identifier: "ar")
+        return formatter.string(from: createdAt)
     }
 }
 
-// MARK: - CVData Extensions
+// MARK: - Preview
 extension CVData {
-    /// نسخة فارغة للـ Preview
     static var preview: CVData {
         let cv = CVData(
-            cvName: "Marketing Resume 2024",
-            fullName: "Alex Morgan",
-            jobTitle: "Senior Product Designer",
-            email: "alex@example.com",
-            phone: "+1 (555) 000-0000",
-            location: "San Francisco, CA",
-            website: "linkedin.com/in/alexmorgan",
-            summary: "Creative product designer with 5+ years of experience in creating user-centered digital experiences."
+            cvName: "سيرتي الذاتية",
+            fullName: "أحمد محمد الراشد",
+            jobTitle: "مطور تطبيقات iOS",
+            email: "ahmed@example.com",
+            phone: "+966 50 000 0000",
+            location: "الرياض، السعودية",
+            website: "www.ahmed.dev",
+            linkedin: "linkedin.com/in/ahmed",
+            summary: "مطور iOS محترف مع خبرة 5 سنوات في بناء تطبيقات عالية الجودة باستخدام Swift و SwiftUI.",
+            dateOfBirth: Calendar.current.date(byAdding: .year, value: -28, to: Date()),
+            nationality: "سعودي",
+            gender: .male,
+            maritalStatus: .single,
+            drivingLicense: .car,
+            visaStatus: .citizen,
+            showDateOfBirth: true,
+            showNationality: true
         )
         return cv
     }
-    
-    /// الوقت المنقضي منذ آخر تعديل
-    var lastEditedText: String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .full
-        return formatter.localizedString(for: updatedAt, relativeTo: Date())
-    }
 }
-
