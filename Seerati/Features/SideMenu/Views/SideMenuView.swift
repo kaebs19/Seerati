@@ -24,6 +24,12 @@ struct SideMenuView: View {
     @State private var showContactUs = false
     @State private var showAbout = false
     
+    // ✅ NEW: Sheets for main screens
+    @State private var showProfile = false
+    @State private var showMyCVs = false
+    @State private var showTemplates = false
+    @State private var showSettings = false
+    
     // MARK: - Body
     var body: some View {
         ZStack(alignment: .leading) {
@@ -65,6 +71,19 @@ struct SideMenuView: View {
         }
         .sheet(isPresented: $showAbout) {
             AboutAppSheet()
+        }
+        // ✅ NEW: Main screens sheets
+        .sheet(isPresented: $showProfile) {
+            ProfileView()
+        }
+        .sheet(isPresented: $showMyCVs) {
+            MyCVsView()
+        }
+        .sheet(isPresented: $showTemplates) {
+            TemplatesView()
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsMainView()
         }
     }
     
@@ -163,28 +182,28 @@ struct SideMenuView: View {
                 icon: "person.fill",
                 title: SideMenuStrings.profile
             ) {
-                navigate(to: .profile)
+                closeAndShow { showProfile = true }
             }
             
             MenuItem(
                 icon: "doc.text.fill",
                 title: SideMenuStrings.myCVs
             ) {
-                navigate(to: .myCVs)
+                closeAndShow { showMyCVs = true }
             }
             
             MenuItem(
                 icon: "square.grid.2x2.fill",
                 title: SideMenuStrings.templates
             ) {
-                navigate(to: .templates)
+                closeAndShow { showTemplates = true }
             }
             
             MenuItem(
                 icon: "gearshape.fill",
                 title: SideMenuStrings.settings
             ) {
-                navigate(to: .settings)
+                closeAndShow { showSettings = true }
             }
         }
     }
@@ -393,7 +412,7 @@ struct LanguagePickerSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("تم") {
+                    Button(LocalizationManager.shared.isArabic ? "تم" : "Done") {
                         dismiss()
                     }
                 }
@@ -407,6 +426,53 @@ struct LanguagePickerSheet: View {
 struct AboutAppSheet: View {
     
     @Environment(\.dismiss) private var dismiss
+    
+    // About Strings
+    private var aboutTitle: String {
+        LocalizationManager.shared.isArabic ? "عن التطبيق" : "About"
+    }
+    
+    private var description: String {
+        LocalizationManager.shared.isArabic
+            ? "تطبيق سيرتي هو أفضل تطبيق لإنشاء السير الذاتية الاحترافية باللغة العربية والإنجليزية."
+            : "Seerati is the best app for creating professional CVs in Arabic and English."
+    }
+    
+    private var feature1: String {
+        LocalizationManager.shared.isArabic ? "قوالب احترافية متعددة" : "Multiple professional templates"
+    }
+    
+    private var feature2: String {
+        LocalizationManager.shared.isArabic ? "دعم العربية والإنجليزية" : "Arabic and English support"
+    }
+    
+    private var feature3: String {
+        LocalizationManager.shared.isArabic ? "تصدير PDF عالي الجودة" : "High quality PDF export"
+    }
+    
+    private var feature4: String {
+        LocalizationManager.shared.isArabic ? "خصوصية تامة - بياناتك على جهازك" : "Complete privacy - data on your device"
+    }
+    
+    private var rateUs: String {
+        LocalizationManager.shared.isArabic ? "قيّمنا" : "Rate Us"
+    }
+    
+    private var share: String {
+        LocalizationManager.shared.isArabic ? "شارك" : "Share"
+    }
+    
+    private var contact: String {
+        LocalizationManager.shared.isArabic ? "تواصل" : "Contact"
+    }
+    
+    private var copyright: String {
+        LocalizationManager.shared.isArabic ? "© 2024 سيرتي. جميع الحقوق محفوظة." : "© 2024 Seerati. All rights reserved."
+    }
+    
+    private var versionText: String {
+        LocalizationManager.shared.isArabic ? "الإصدار" : "Version"
+    }
     
     var body: some View {
         NavigationStack {
@@ -427,14 +493,14 @@ struct AboutAppSheet: View {
                             .font(.system(size: 18))
                             .foregroundStyle(AppColors.textSecondary)
                         
-                        Text("الإصدار \(AppActions.shared.fullVersion)")
+                        Text("\(versionText) \(AppActions.shared.fullVersion)")
                             .font(AppFonts.caption())
                             .foregroundStyle(AppColors.textSecondary)
                             .padding(.top, AppSpacing.xs)
                     }
                     
                     // Description
-                    Text("تطبيق سيرتي هو أفضل تطبيق لإنشاء السير الذاتية الاحترافية باللغة العربية والإنجليزية. صمم سيرتك الذاتية بسهولة واحترافية.")
+                    Text(description)
                         .font(AppFonts.body())
                         .foregroundStyle(AppColors.textSecondary)
                         .multilineTextAlignment(.center)
@@ -442,10 +508,10 @@ struct AboutAppSheet: View {
                     
                     // Features
                     VStack(alignment: .leading, spacing: AppSpacing.md) {
-                        featureRow(icon: "paintpalette.fill", text: "قوالب احترافية متعددة")
-                        featureRow(icon: "globe", text: "دعم العربية والإنجليزية")
-                        featureRow(icon: "doc.fill", text: "تصدير PDF عالي الجودة")
-                        featureRow(icon: "lock.fill", text: "خصوصية تامة - بياناتك على جهازك")
+                        featureRow(icon: "paintpalette.fill", text: feature1)
+                        featureRow(icon: "globe", text: feature2)
+                        featureRow(icon: "doc.fill", text: feature3)
+                        featureRow(icon: "lock.fill", text: feature4)
                     }
                     .padding(AppSpacing.lg)
                     .background(AppColors.surface)
@@ -454,15 +520,15 @@ struct AboutAppSheet: View {
                     
                     // Social Links
                     HStack(spacing: AppSpacing.xl) {
-                        socialButton(icon: "star.fill", label: "قيّمنا") {
+                        socialButton(icon: "star.fill", label: rateUs) {
                             AppActions.shared.openAppStoreReview()
                         }
                         
-                        socialButton(icon: "square.and.arrow.up", label: "شارك") {
+                        socialButton(icon: "square.and.arrow.up", label: share) {
                             AppActions.shared.shareApp()
                         }
                         
-                        socialButton(icon: "envelope.fill", label: "تواصل") {
+                        socialButton(icon: "envelope.fill", label: contact) {
                             AppActions.shared.contactSupport()
                         }
                     }
@@ -471,14 +537,14 @@ struct AboutAppSheet: View {
                     Spacer(minLength: 50)
                     
                     // Copyright
-                    Text("© 2024 سيرتي. جميع الحقوق محفوظة.")
+                    Text(copyright)
                         .font(AppFonts.caption())
                         .foregroundStyle(AppColors.textSecondary)
                         .padding(.bottom, AppSpacing.xl)
                 }
             }
             .background(AppColors.background)
-            .navigationTitle("عن التطبيق")
+            .navigationTitle(aboutTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {

@@ -48,11 +48,11 @@ struct HomeView: View {
             CreateCVFlowView()
         }
         .sheet(item: $selectedCVForEdit) { cv in
-            // ✅ FIX: Wrap in NavigationStack for proper navigation
             NavigationStack {
                 PersonalInfoMainView(cv: cv)
             }
         }
+        // ✅ استخدام الشاشات الحقيقية
         .sheet(isPresented: $showProfile) {
             ProfileView()
         }
@@ -63,19 +63,19 @@ struct HomeView: View {
             TemplatesView()
         }
         .sheet(isPresented: $showSettings) {
-            SettingsView()
+            SettingsMainView()
         }
         .sheet(isPresented: $showPrivacyPolicy) {
-            PrivacyPolicyView()
+            WebViewScreen(title: SideMenuStrings.privacyPolicy, url: AppURLs.privacyPolicy)
         }
         .sheet(isPresented: $showTermsOfUse) {
-            TermsOfUseView()
+            WebViewScreen(title: SideMenuStrings.termsOfUse, url: AppURLs.termsOfUse)
         }
         .sheet(isPresented: $showContactUs) {
-            ContactUsView()
+            WebViewScreen(title: SideMenuStrings.contactUs, url: AppURLs.contactUs)
         }
         .sheet(isPresented: $showAbout) {
-            AboutView()
+            AboutAppSheet()
         }
         .confirmationDialog(
             "CV Options",
@@ -94,15 +94,15 @@ struct HomeView: View {
             Button(HomeStrings.delete, role: .destructive) {
                 viewModel.confirmDelete(cv)
             }
-            Button("Cancel", role: .cancel) {}
+            Button(CommonStrings.cancel, role: .cancel) {}
         }
-        .alert("Delete CV?", isPresented: $viewModel.showDeleteConfirmation) {
-            Button("Cancel", role: .cancel) {}
-            Button("Delete", role: .destructive) {
+        .alert(HomeStrings.delete + "?", isPresented: $viewModel.showDeleteConfirmation) {
+            Button(CommonStrings.cancel, role: .cancel) {}
+            Button(CommonStrings.delete, role: .destructive) {
                 viewModel.deleteCV()
             }
         } message: {
-            Text("This action cannot be undone.")
+            Text(MyCVsStrings.deleteMessage)
         }
     }
     
@@ -182,12 +182,9 @@ struct HomeView: View {
             .padding(.horizontal, AppSpacing.screenHorizontal)
             
             TemplateCarousel(templates: Template.allTemplates) { template in
-                // Handle template selection
                 if template.isPremium {
-                    // Show premium prompt
                     print("Premium template: \(template.name)")
                 } else {
-                    // Use free template
                     print("Free template: \(template.name)")
                 }
             }
@@ -201,12 +198,10 @@ struct HomeView: View {
                 .padding(.horizontal, AppSpacing.screenHorizontal)
             
             if viewModel.isLoading {
-                // Loading State
                 ProgressView()
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, AppSpacing.xxl)
             } else if viewModel.recentCVs.isEmpty {
-                // Empty State
                 EmptyStateCard(
                     icon: "doc.text",
                     title: HomeStrings.noCVsYet,
@@ -217,7 +212,6 @@ struct HomeView: View {
                 }
                 .padding(.horizontal, AppSpacing.screenHorizontal)
             } else {
-                // CVs List
                 RecentCVsList(
                     cvs: viewModel.recentCVs,
                     onSelect: { cv in
@@ -252,143 +246,9 @@ struct HomeView: View {
         case .about:
             showAbout = true
         case .rateApp:
-            rateApp()
+            AppActions.shared.rateApp()
         case .shareApp:
-            shareApp()
-        }
-    }
-    
-    // MARK: - Actions
-    private func rateApp() {
-        // Open App Store for rating
-        if let url = URL(string: "itms-apps://itunes.apple.com/app/idYOUR_APP_ID?action=write-review") {
-            UIApplication.shared.open(url)
-        }
-    }
-    
-    private func shareApp() {
-        let text = "Check out Seerati - Create professional CVs easily!"
-        let url = URL(string: "https://apps.apple.com/app/idYOUR_APP_ID")!
-        let activityVC = UIActivityViewController(activityItems: [text, url], applicationActivities: nil)
-        
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let rootVC = windowScene.windows.first?.rootViewController {
-            rootVC.present(activityVC, animated: true)
-        }
-    }
-}
-
-// MARK: - Placeholder Views
-struct ProfileView: View {
-    @Environment(\.dismiss) private var dismiss
-    var body: some View {
-        NavigationStack {
-            Text("Profile View")
-                .navigationTitle(SideMenuStrings.profile)
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Done") { dismiss() }
-                    }
-                }
-        }
-    }
-}
-
-struct MyCVsView: View {
-    @Environment(\.dismiss) private var dismiss
-    var body: some View {
-        NavigationStack {
-            Text("My CVs View")
-                .navigationTitle(SideMenuStrings.myCVs)
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Done") { dismiss() }
-                    }
-                }
-        }
-    }
-}
-
-struct TemplatesView: View {
-    @Environment(\.dismiss) private var dismiss
-    var body: some View {
-        NavigationStack {
-            Text("Templates View")
-                .navigationTitle(SideMenuStrings.templates)
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Done") { dismiss() }
-                    }
-                }
-        }
-    }
-}
-
-// Note: SettingsMainView moved to Features/Settings/Views/SettingsView.swift
-
-struct PrivacyPolicyView: View {
-    @Environment(\.dismiss) private var dismiss
-    var body: some View {
-        NavigationStack {
-            Text("Privacy Policy")
-                .navigationTitle(SideMenuStrings.privacyPolicy)
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Done") { dismiss() }
-                    }
-                }
-        }
-    }
-}
-
-struct TermsOfUseView: View {
-    @Environment(\.dismiss) private var dismiss
-    var body: some View {
-        NavigationStack {
-            Text("Terms of Use")
-                .navigationTitle(SideMenuStrings.termsOfUse)
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Done") { dismiss() }
-                    }
-                }
-        }
-    }
-}
-
-struct ContactUsView: View {
-    @Environment(\.dismiss) private var dismiss
-    var body: some View {
-        NavigationStack {
-            Text("Contact Us")
-                .navigationTitle(SideMenuStrings.contactUs)
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Done") { dismiss() }
-                    }
-                }
-        }
-    }
-}
-
-struct AboutView: View {
-    @Environment(\.dismiss) private var dismiss
-    var body: some View {
-        NavigationStack {
-            Text("About App")
-                .navigationTitle(SideMenuStrings.aboutApp)
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Done") { dismiss() }
-                    }
-                }
+            AppActions.shared.shareApp()
         }
     }
 }

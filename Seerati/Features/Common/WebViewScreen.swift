@@ -78,7 +78,7 @@ struct WebViewScreen: View {
                 .font(.system(size: 50))
                 .foregroundStyle(AppColors.textSecondary)
             
-            Text("تعذر تحميل الصفحة")
+            Text(LocalizationManager.shared.isArabic ? "تعذر تحميل الصفحة" : "Failed to load page")
                 .font(AppFonts.title3(weight: .semibold))
                 .foregroundStyle(AppColors.textPrimary)
             
@@ -91,7 +91,7 @@ struct WebViewScreen: View {
                 loadError = nil
                 isLoading = true
             } label: {
-                Text("إعادة المحاولة")
+                Text(LocalizationManager.shared.isArabic ? "إعادة المحاولة" : "Retry")
                     .font(AppFonts.body(weight: .medium))
                     .foregroundStyle(.white)
                     .padding(.horizontal, AppSpacing.xl)

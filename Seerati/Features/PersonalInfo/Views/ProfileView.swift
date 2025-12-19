@@ -1,30 +1,128 @@
 //
-//  DefaultProfileView.swift
+//  ProfileView.swift
 //  Seerati
 //
-//  Path: Seerati/Features/Settings/Views/DefaultProfileView.swift
+//  Path: Seerati/Features/Profile/Views/ProfileView.swift
 //
 //  ─────────────────────────────────────────────────
-//  AR: شاشة معلوماتي الافتراضية المحدثة
-//  EN: Updated Default Profile Screen
+//  AR: شاشة الملف الشخصي الموحدة
+//  EN: Unified Profile Screen
 //  ─────────────────────────────────────────────────
 
 import SwiftUI
 import PhotosUI
 
-// MARK: - Default Profile View
-struct DefaultProfileView: View {
+// MARK: - Profile Strings
+private enum ProfileViewStrings {
+    static var title: String {
+        LocalizationManager.shared.isArabic ? "معلوماتي الافتراضية" : "My Default Info"
+    }
+    
+    static var subtitle: String {
+        LocalizationManager.shared.isArabic
+            ? "هذه المعلومات ستُستخدم لتعبئة السير الذاتية الجديدة تلقائياً"
+            : "This info will be used to auto-fill new CVs"
+    }
+    
+    static var save: String {
+        LocalizationManager.shared.isArabic ? "حفظ" : "Save"
+    }
+    
+    static var removePhoto: String {
+        LocalizationManager.shared.isArabic ? "إزالة الصورة" : "Remove Photo"
+    }
+    
+    // Basic Info
+    static var fullName: String {
+        LocalizationManager.shared.isArabic ? "الاسم الكامل" : "Full Name"
+    }
+    
+    static var fullNamePlaceholder: String {
+        LocalizationManager.shared.isArabic ? "أدخل اسمك الكامل" : "Enter your full name"
+    }
+    
+    // Contact Info
+    static var email: String {
+        LocalizationManager.shared.isArabic ? "البريد الإلكتروني" : "Email"
+    }
+    
+    static var phone: String {
+        LocalizationManager.shared.isArabic ? "رقم الهاتف" : "Phone"
+    }
+    
+    static var phonePlaceholder: String {
+        LocalizationManager.shared.isArabic ? "+966 50 000 0000" : "+1 000 000 0000"
+    }
+    
+    static var location: String {
+        LocalizationManager.shared.isArabic ? "الموقع" : "Location"
+    }
+    
+    static var locationPlaceholder: String {
+        LocalizationManager.shared.isArabic ? "المدينة، البلد" : "City, Country"
+    }
+    
+    static var website: String {
+        LocalizationManager.shared.isArabic ? "الموقع / LinkedIn" : "Website / LinkedIn"
+    }
+    
+    // Additional Info Section
+    static var additionalInfo: String {
+        LocalizationManager.shared.isArabic ? "معلومات إضافية" : "Additional Info"
+    }
+    
+    static var dateOfBirth: String {
+        LocalizationManager.shared.isArabic ? "تاريخ الميلاد" : "Date of Birth"
+    }
+    
+    static var notSpecified: String {
+        LocalizationManager.shared.isArabic ? "غير محدد" : "Not specified"
+    }
+    
+    static var yearsOld: String {
+        LocalizationManager.shared.isArabic ? "سنة" : "years"
+    }
+    
+    static var nationality: String {
+        LocalizationManager.shared.isArabic ? "الجنسية" : "Nationality"
+    }
+    
+    static var gender: String {
+        LocalizationManager.shared.isArabic ? "الجنس" : "Gender"
+    }
+    
+    static var maritalStatus: String {
+        LocalizationManager.shared.isArabic ? "الحالة الاجتماعية" : "Marital Status"
+    }
+    
+    static var drivingLicense: String {
+        LocalizationManager.shared.isArabic ? "رخصة القيادة" : "Driving License"
+    }
+    
+    static var visaStatus: String {
+        LocalizationManager.shared.isArabic ? "حالة الإقامة" : "Visa Status"
+    }
+    
+    // Toast
+    static var savedMessage: String {
+        LocalizationManager.shared.isArabic ? "تم حفظ المعلومات" : "Info saved"
+    }
+}
+
+// MARK: - Profile View
+struct ProfileView: View {
     
     // MARK: - Properties
     @Environment(\.dismiss) private var dismiss
+    
+    // Basic Info
     @AppStorage("defaultFullName") private var fullName = ""
     @AppStorage("defaultEmail") private var email = ""
     @AppStorage("defaultPhone") private var phone = ""
     @AppStorage("defaultLocation") private var location = ""
     @AppStorage("defaultLinkedIn") private var linkedin = ""
-    @AppStorage("defaultWebsite") private var website = ""
     
-    // ✅ NEW: Additional Personal Info
+    // Additional Personal Info
     @AppStorage("defaultNationality") private var nationality = ""
     @AppStorage("defaultGender") private var genderRaw = Gender.preferNotToSay.rawValue
     @AppStorage("defaultMaritalStatus") private var maritalStatusRaw = MaritalStatus.preferNotToSay.rawValue
@@ -32,8 +130,11 @@ struct DefaultProfileView: View {
     @AppStorage("defaultVisaStatus") private var visaStatusRaw = VisaStatus.citizen.rawValue
     @AppStorage("defaultDateOfBirth") private var dateOfBirthTimestamp: Double = 0
     
+    // Photo
     @State private var photoItem: PhotosPickerItem?
     @State private var profileImage: UIImage?
+    
+    // UI State
     @State private var showSavedToast = false
     @State private var showAdditionalInfo = false
     @State private var showDatePicker = false
@@ -69,7 +170,7 @@ struct DefaultProfileView: View {
         guard let dob = dateOfBirth else { return "" }
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
-        formatter.locale = Locale(identifier: "ar")
+        formatter.locale = Locale(identifier: LocalizationManager.shared.isArabic ? "ar" : "en")
         return formatter.string(from: dob)
     }
     
@@ -97,7 +198,7 @@ struct DefaultProfileView: View {
                     // Contact Info
                     contactInfoSection
                     
-                    // ✅ NEW: Additional Personal Info
+                    // Additional Personal Info
                     additionalInfoSection
                     
                     Spacer(minLength: 100)
@@ -106,7 +207,7 @@ struct DefaultProfileView: View {
                 .padding(.top, AppSpacing.md)
             }
             .background(AppColors.background)
-            .navigationTitle("معلوماتي الافتراضية")
+            .navigationTitle(ProfileViewStrings.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -119,7 +220,7 @@ struct DefaultProfileView: View {
                 }
                 
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("حفظ المعلومات") {
+                    Button(ProfileViewStrings.save) {
                         saveProfile()
                     }
                     .font(AppFonts.body(weight: .semibold))
@@ -153,7 +254,7 @@ struct DefaultProfileView: View {
     
     // MARK: - Header Text
     private var headerText: some View {
-        Text("هذه المعلومات ستُستخدم لتعبئة السير الذاتية الجديدة تلقائياً")
+        Text(ProfileViewStrings.subtitle)
             .font(AppFonts.caption())
             .foregroundStyle(AppColors.textSecondary)
             .multilineTextAlignment(.center)
@@ -184,7 +285,7 @@ struct DefaultProfileView: View {
             }
             
             if profileImage != nil {
-                Button("إزالة الصورة") {
+                Button(ProfileViewStrings.removePhoto) {
                     removePhoto()
                 }
                 .font(AppFonts.caption())
@@ -197,9 +298,9 @@ struct DefaultProfileView: View {
     private var basicInfoSection: some View {
         VStack(spacing: AppSpacing.md) {
             ProfileTextField(
-                title: "الاسم الكامل",
+                title: ProfileViewStrings.fullName,
                 icon: "person.fill",
-                placeholder: "أدخل اسمك الكامل",
+                placeholder: ProfileViewStrings.fullNamePlaceholder,
                 text: $fullName
             )
         }
@@ -209,7 +310,7 @@ struct DefaultProfileView: View {
     private var contactInfoSection: some View {
         VStack(spacing: AppSpacing.md) {
             ProfileTextField(
-                title: "البريد الإلكتروني",
+                title: ProfileViewStrings.email,
                 icon: "envelope.fill",
                 placeholder: "example@email.com",
                 text: $email,
@@ -217,22 +318,22 @@ struct DefaultProfileView: View {
             )
             
             ProfileTextField(
-                title: "رقم الهاتف",
+                title: ProfileViewStrings.phone,
                 icon: "phone.fill",
-                placeholder: "+966 50 000 0000",
+                placeholder: ProfileViewStrings.phonePlaceholder,
                 text: $phone,
                 keyboardType: .phonePad
             )
             
             ProfileTextField(
-                title: "الموقع",
+                title: ProfileViewStrings.location,
                 icon: "location.fill",
-                placeholder: "المدينة، البلد",
+                placeholder: ProfileViewStrings.locationPlaceholder,
                 text: $location
             )
             
             ProfileTextField(
-                title: "الموقع / LINKEDIN",
+                title: ProfileViewStrings.website,
                 icon: "link",
                 placeholder: "https://...",
                 text: $linkedin,
@@ -248,7 +349,7 @@ struct DefaultProfileView: View {
             HStack {
                 Image(systemName: "person.text.rectangle")
                     .foregroundStyle(AppColors.primary)
-                Text("معلومات إضافية")
+                Text(ProfileViewStrings.additionalInfo)
                     .font(AppFonts.caption(weight: .semibold))
                     .foregroundStyle(AppColors.textSecondary)
                 Spacer()
@@ -269,26 +370,26 @@ struct DefaultProfileView: View {
                 VStack(spacing: AppSpacing.md) {
                     // تاريخ الميلاد
                     additionalInfoRow(
-                        title: "تاريخ الميلاد",
+                        title: ProfileViewStrings.dateOfBirth,
                         icon: "calendar",
-                        value: dateOfBirth != nil ? formattedDateOfBirth : "غير محدد",
-                        trailing: age != nil ? "(\(age!) سنة)" : nil
+                        value: dateOfBirth != nil ? formattedDateOfBirth : ProfileViewStrings.notSpecified,
+                        trailing: age != nil ? "(\(age!) \(ProfileViewStrings.yearsOld))" : nil
                     ) {
                         showDatePicker = true
                     }
                     
                     // الجنسية
                     additionalInfoRow(
-                        title: "الجنسية",
+                        title: ProfileViewStrings.nationality,
                         icon: "globe",
-                        value: nationality.isEmpty ? "غير محددة" : nationality
+                        value: nationality.isEmpty ? ProfileViewStrings.notSpecified : nationality
                     ) {
                         showNationalityPicker = true
                     }
                     
                     // الجنس
                     additionalInfoPickerRow(
-                        title: "الجنس",
+                        title: ProfileViewStrings.gender,
                         icon: "person.fill",
                         options: [Gender.male, .female],
                         selection: Binding(
@@ -300,7 +401,7 @@ struct DefaultProfileView: View {
                     
                     // الحالة الاجتماعية
                     additionalInfoPickerRow(
-                        title: "الحالة الاجتماعية",
+                        title: ProfileViewStrings.maritalStatus,
                         icon: "heart.fill",
                         options: [MaritalStatus.single, .married, .divorced],
                         selection: Binding(
@@ -312,7 +413,7 @@ struct DefaultProfileView: View {
                     
                     // رخصة القيادة
                     additionalInfoPickerRow(
-                        title: "رخصة القيادة",
+                        title: ProfileViewStrings.drivingLicense,
                         icon: "car.fill",
                         options: [DrivingLicense.none, .car, .international],
                         selection: Binding(
@@ -324,7 +425,7 @@ struct DefaultProfileView: View {
                     
                     // حالة الإقامة
                     additionalInfoPickerRow(
-                        title: "حالة الإقامة",
+                        title: ProfileViewStrings.visaStatus,
                         icon: "doc.text.fill",
                         options: [VisaStatus.citizen, .resident, .transferable],
                         selection: Binding(
@@ -373,7 +474,7 @@ struct DefaultProfileView: View {
                         .foregroundStyle(AppColors.primary)
                 }
                 
-                Image(systemName: "chevron.left")
+                Image(systemName: LocalizationManager.shared.isArabic ? "chevron.left" : "chevron.right")
                     .font(.system(size: 10))
                     .foregroundStyle(AppColors.textSecondary)
             }
@@ -437,7 +538,7 @@ struct DefaultProfileView: View {
             HStack(spacing: AppSpacing.sm) {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.green)
-                Text("تم حفظ المعلومات")
+                Text(ProfileViewStrings.savedMessage)
                     .font(AppFonts.body(weight: .medium))
             }
             .padding()
@@ -538,5 +639,5 @@ struct ProfileTextField: View {
 
 // MARK: - Preview
 #Preview {
-    DefaultProfileView()
+    ProfileView()
 }
