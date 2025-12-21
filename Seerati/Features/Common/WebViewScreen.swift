@@ -114,17 +114,24 @@ struct WebViewRepresentable: UIViewRepresentable {
     @Binding var loadError: Error?
     
     func makeUIView(context: Context) -> WKWebView {
-        let webView = WKWebView()
+        let configuration = WKWebViewConfiguration()
+        configuration.allowsInlineMediaPlayback = true
+        
+        let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
         webView.scrollView.showsHorizontalScrollIndicator = false
         webView.backgroundColor = UIColor(AppColors.background)
         webView.isOpaque = false
+        
+        // ✅ تحميل URL مرة واحدة فقط هنا
+        let request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad)
+        webView.load(request)
+        
         return webView
     }
     
     func updateUIView(_ webView: WKWebView, context: Context) {
-        let request = URLRequest(url: url)
-        webView.load(request)
+        // ✅ لا نحمل مرة أخرى هنا - فقط في makeUIView
     }
     
     func makeCoordinator() -> Coordinator {
@@ -149,20 +156,26 @@ struct WebViewRepresentable: UIViewRepresentable {
         
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
             parent.isLoading = false
-            parent.loadError = error
+            // ✅ تجاهل خطأ الإلغاء
+            if (error as NSError).code != NSURLErrorCancelled {
+                parent.loadError = error
+            }
         }
         
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
             parent.isLoading = false
-            parent.loadError = error
+            // ✅ تجاهل خطأ الإلغاء
+            if (error as NSError).code != NSURLErrorCancelled {
+                parent.loadError = error
+            }
         }
     }
 }
 
 // MARK: - App URLs
 enum AppURLs {
-    // ✅ روابط GitHub Pages
-    static let privacyPolicy = URL(string: "https://kaebs19.github.io/SeeratiWeb/privacy-policy.html")!
+    // ✅ روابط GitHub Pages - مصححة
+    static let privacyPolicy = URL(string: "https://kaebs19.github.io/SeeratiWeb/privacy.html")!
     static let termsOfUse = URL(string: "https://kaebs19.github.io/SeeratiWeb/terms-of-use.html")!
     static let contactUs = URL(string: "https://kaebs19.github.io/SeeratiWeb/contact-us.html")!
     

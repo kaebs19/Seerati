@@ -9,6 +9,7 @@
 //  EN: Main home screen - displays CVs list
 //  ─────────────────────────────────────────────
 
+
 import SwiftUI
 
 // MARK: - Home View
@@ -29,6 +30,12 @@ struct HomeView: View {
     @State private var showTermsOfUse = false
     @State private var showContactUs = false
     @State private var showAbout = false
+    
+    // ✅ واجهة Premium
+    @State private var showPremiumView = false
+    
+    // ✅ حالة البانر
+    @State private var isBannerLoaded = false
     
     // MARK: - Body
     var body: some View {
@@ -52,7 +59,6 @@ struct HomeView: View {
                 PersonalInfoMainView(cv: cv)
             }
         }
-        // ✅ استخدام الشاشات الحقيقية
         .sheet(isPresented: $showProfile) {
             ProfileView()
         }
@@ -76,6 +82,10 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showAbout) {
             AboutAppSheet()
+        }
+        // ✅ واجهة Premium
+        .sheet(isPresented: $showPremiumView) {
+            PremiumView()
         }
         .confirmationDialog(
             "CV Options",
@@ -108,35 +118,53 @@ struct HomeView: View {
     
     // MARK: - Main Content
     private var mainContent: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: AppSpacing.xl) {
-                // Header
-                headerSection
-                
-                // Create Button
-                CreateCVButton {
-                    showCreateCV = true
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: AppSpacing.xl) {
+                    // Header
+                    headerSection
+                    
+                    // Create Button
+                    CreateCVButton {
+                        // ✅ عرض إعلان بيني قبل إنشاء CV
+                        AdMobManager.shared.showInterstitial {
+                            showCreateCV = true
+                        }
+                    }
+                    .padding(.horizontal, AppSpacing.screenHorizontal)
+                    
+                    // Templates
+                    templatesSection
+                    
+                    // Recent CVs
+                    recentCVsSection
                 }
-                .padding(.horizontal, AppSpacing.screenHorizontal)
-                
-                // Templates
-                templatesSection
-                
-                // Recent CVs
-                recentCVsSection
+                .padding(.vertical, AppSpacing.screenTop)
             }
-            .padding(.vertical, AppSpacing.screenTop)
+            .background(AppColors.background)
+            .refreshable {
+                viewModel.refresh()
+            }
+            
+            // ✅ Banner Ad في الأسفل
+            bannerAdSection
         }
-        .background(AppColors.background)
-        .refreshable {
-            viewModel.refresh()
+    }
+    
+    // ✅ MARK: - Banner Ad Section
+    private var bannerAdSection: some View {
+        Group {
+            if !PurchaseManager.shared.isPremium {
+                AdaptiveBannerAdView(isLoaded: $isBannerLoaded)
+                    .frame(height: isBannerLoaded ? 50 : 0)
+                    .animation(.easeInOut(duration: 0.3), value: isBannerLoaded)
+            }
         }
     }
     
     // MARK: - Header Section
     private var headerSection: some View {
         HStack {
-            // Menu Button
             Button {
                 withAnimation {
                     showSideMenu = true
@@ -150,14 +178,12 @@ struct HomeView: View {
             
             Spacer()
             
-            // App Logo/Title
-            Text("Seerati")
+            Text(Language.english.isRTL ? "Seerati" : "سيرتي")
                 .font(AppFonts.title2())
                 .foregroundStyle(AppColors.primary)
             
             Spacer()
             
-            // Settings Button
             Button {
                 showSettings = true
             } label: {
@@ -182,12 +208,28 @@ struct HomeView: View {
             .padding(.horizontal, AppSpacing.screenHorizontal)
             
             TemplateCarousel(templates: Template.allTemplates) { template in
-                if template.isPremium {
-                    print("Premium template: \(template.name)")
-                } else {
-                    print("Free template: \(template.name)")
-                }
+                // ✅ معالجة اختيار القالب
+                handleTemplateSelection(template)
             }
+        }
+    }
+    
+    // ✅ MARK: - Handle Template Selection
+    private func handleTemplateSelection(_ template: Template) {
+        if template.isPremium {
+            // القالب مدفوع - تحقق من الحالة
+            if PurchaseManager.shared.isPremium {
+                // المستخدم Premium - استخدم القالب
+                UserDefaults.standard.set(template.id, forKey: "selectedTemplateId")
+                print("✅ Premium template selected: \(template.name)")
+            } else {
+                // المستخدم مجاني - اعرض واجهة الاشتراك
+                showPremiumView = true
+            }
+        } else {
+            // القالب مجاني - استخدمه مباشرة
+            UserDefaults.standard.set(template.id, forKey: "selectedTemplateId")
+            print("✅ Free template selected: \(template.name)")
         }
     }
     
@@ -251,9 +293,4 @@ struct HomeView: View {
             AppActions.shared.shareApp()
         }
     }
-}
-
-// MARK: - Preview
-#Preview {
-    HomeView()
 }

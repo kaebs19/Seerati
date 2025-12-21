@@ -253,7 +253,9 @@ struct TemplateCardView: View {
 struct TemplatePreviewSheet: View {
     let template: Template
     @Environment(\.dismiss) private var dismiss
-    @State private var showPremiumAlert = false
+    
+    // ✅ إضافة واجهة Premium بدلاً من Alert
+    @State private var showPremiumView = false
     
     var body: some View {
         NavigationStack {
@@ -333,24 +335,27 @@ struct TemplatePreviewSheet: View {
                 
                 // Use Button
                 Button {
-                    if template.isPremium {
-                        showPremiumAlert = true
+                    // ✅ التحقق من Premium
+                    if template.isPremium && !PurchaseManager.shared.isPremium {
+                        showPremiumView = true
                     } else {
                         UserDefaults.standard.set(template.id, forKey: "selectedTemplateId")
                         dismiss()
                     }
                 } label: {
                     HStack {
-                        if template.isPremium {
+                        if template.isPremium && !PurchaseManager.shared.isPremium {
                             Image(systemName: "crown.fill")
                         }
-                        Text(template.isPremium ? TemplatesViewStrings.upgradeToUse : TemplatesViewStrings.useTemplate)
+                        Text(template.isPremium && !PurchaseManager.shared.isPremium
+                             ? TemplatesViewStrings.upgradeToUse
+                             : TemplatesViewStrings.useTemplate)
                     }
                     .font(AppFonts.body(weight: .semibold))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, AppSpacing.md)
-                    .background(template.isPremium ? Color.orange : AppColors.primary)
+                    .background(template.isPremium && !PurchaseManager.shared.isPremium ? Color.orange : AppColors.primary)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .padding(.horizontal, AppSpacing.screenHorizontal)
@@ -369,13 +374,9 @@ struct TemplatePreviewSheet: View {
                     }
                 }
             }
-            .alert(TemplatesViewStrings.premiumFeature, isPresented: $showPremiumAlert) {
-                Button(TemplatesViewStrings.cancel, role: .cancel) { }
-                Button(TemplatesViewStrings.upgrade) {
-                    // Show paywall
-                }
-            } message: {
-                Text(TemplatesViewStrings.premiumMessage)
+            // ✅ عرض واجهة Premium
+            .sheet(isPresented: $showPremiumView) {
+                PremiumView()
             }
         }
     }

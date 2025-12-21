@@ -5,8 +5,8 @@
 //  Path: Seerati/Features/CVPreview/ViewModels/CVPreviewViewModel.swift
 //
 //  ─────────────────────────────────────────────────
-//  AR: إدارة حالة ومنطق معاينة السيرة
-//  EN: CV Preview state and logic management
+//  AR: إدارة حالة ومنطق معاينة السيرة - محدث
+//  EN: CV Preview state and logic management - Updated
 //  ─────────────────────────────────────────────────
 
 import SwiftUI
@@ -48,6 +48,9 @@ final class CVPreviewViewModel {
     /// إظهار صفحة Premium
     var showPremiumPage: Bool = false
     
+    /// إظهار تنبيه القالب المقفل
+    var showTemplateLocked: Bool = false
+    
     /// PDF المُنشأ
     var generatedPDFData: Data?
     
@@ -64,7 +67,16 @@ final class CVPreviewViewModel {
     // MARK: - Init
     init(cv: CVData, template: Template? = nil) {
         self.cv = cv
-        self.selectedTemplate = template ?? Template.allTemplates.first!
+        
+        // تحديد القالب الافتراضي
+        if let template = template {
+            self.selectedTemplate = template
+        } else if let savedTemplateId = UserDefaults.standard.string(forKey: "selectedTemplateId"),
+                  let savedTemplate = Template.find(byId: savedTemplateId) {
+            self.selectedTemplate = savedTemplate
+        } else {
+            self.selectedTemplate = Template.allTemplates.first!
+        }
     }
     
     // MARK: - Computed
@@ -134,15 +146,25 @@ final class CVPreviewViewModel {
         }
     }
     
+    // ═══════════════════════════════════════════
+    // MARK: - ✅ Fixed: Select Template
+    // ═══════════════════════════════════════════
+    
     /// تغيير القالب
     func selectTemplate(_ template: Template) {
-        // التحقق من توفر القالب
+        // التحقق من توفر القالب باستخدام isAvailable
         if template.isAvailable {
+            // القالب متاح - استخدمه
             selectedTemplate = template
+            
+            // حفظ اختيار المستخدم
+            UserDefaults.standard.set(template.id, forKey: "selectedTemplateId")
+            
             showTemplateSelector = false
         } else {
-            // يحتاج شراء
-            showPremiumPage = true
+            // القالب مقفل - يحتاج شراء أو اشتراك
+            showTemplateSelector = false
+            showTemplateLocked = true
         }
     }
     

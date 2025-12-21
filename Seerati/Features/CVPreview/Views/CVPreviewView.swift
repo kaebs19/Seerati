@@ -5,11 +5,63 @@
 //  Path: Seerati/Features/CVPreview/Views/CVPreviewView.swift
 //
 //  ─────────────────────────────────────────────────
-//  AR: شاشة معاينة السيرة الذاتية المحسّنة
-//  EN: Enhanced CV Preview screen
+//  AR: شاشة معاينة السيرة الذاتية - محدث مع دعم القوالب
+//  EN: CV Preview screen - Updated with Template Support
 //  ─────────────────────────────────────────────────
 
 import SwiftUI
+
+// MARK: - CV Preview Strings
+private enum CVPreviewString {
+    static var title: String {
+        LocalizationManager.shared.isArabic ? "معاينة السيرة" : "CV Preview"
+    }
+    static var changeTemplate: String {
+        LocalizationManager.shared.isArabic ? "تغيير القالب" : "Change Template"
+    }
+    static var exportPDF: String {
+        LocalizationManager.shared.isArabic ? "تصدير PDF" : "Export PDF"
+    }
+    static var selectTemplate: String {
+        LocalizationManager.shared.isArabic ? "اختر قالب" : "Select Template"
+    }
+    static var done: String {
+        LocalizationManager.shared.isArabic ? "تم" : "Done"
+    }
+    static var premium: String {
+        LocalizationManager.shared.isArabic ? "مميز" : "Premium"
+    }
+    static var free: String {
+        LocalizationManager.shared.isArabic ? "مجاني" : "Free"
+    }
+    static var watermarkNotice: String {
+        LocalizationManager.shared.isArabic ? "سيتم إضافة علامة مائية للنسخة المجانية" : "Watermark will be added for free version"
+    }
+    static var upgrade: String {
+        LocalizationManager.shared.isArabic ? "ترقية" : "Upgrade"
+    }
+    static var exporting: String {
+        LocalizationManager.shared.isArabic ? "جاري التصدير..." : "Exporting..."
+    }
+    static var exportLimitReached: String {
+        LocalizationManager.shared.isArabic ? "تم الوصول للحد الأقصى" : "Export Limit Reached"
+    }
+    static var exportLimitMessage: String {
+        LocalizationManager.shared.isArabic ? "لقد استخدمت جميع التصديرات المجانية. قم بالترقية للحصول على تصديرات غير محدودة." : "You've used all free exports. Upgrade for unlimited exports."
+    }
+    static var exportFailed: String {
+        LocalizationManager.shared.isArabic ? "فشل التصدير" : "Export Failed"
+    }
+    static var templateLocked: String {
+        LocalizationManager.shared.isArabic ? "قالب مقفل" : "Template Locked"
+    }
+    static var templateLockedMessage: String {
+        LocalizationManager.shared.isArabic ? "هذا القالب متاح للمستخدمين المميزين فقط." : "This template is for premium users only."
+    }
+    static var cancel: String {
+        LocalizationManager.shared.isArabic ? "إلغاء" : "Cancel"
+    }
+}
 
 // MARK: - CV Preview View
 struct CVPreviewView: View {
@@ -66,7 +118,7 @@ struct CVPreviewView: View {
             )
         }
         .sheet(isPresented: $viewModel.showShareSheet) {
-            if let pdfData = viewModel.generatedPDFData {
+            if viewModel.generatedPDFData != nil {
                 ShareSheet(activityItems: viewModel.getShareItems())
             }
         }
@@ -77,11 +129,19 @@ struct CVPreviewView: View {
             Button(CVPreviewStrings.upgrade) {
                 viewModel.showPremiumPage = true
             }
-            Button("Cancel", role: .cancel) {}
+            Button(CVPreviewString.cancel, role: .cancel) {}
         } message: {
             Text(CVPreviewStrings.exportLimitMessage)
         }
-        .alert(CVPreviewStrings.exportFailed, isPresented: $viewModel.showExportError) {
+        .alert(CVPreviewString.templateLocked, isPresented: $viewModel.showTemplateLocked) {
+            Button(CVPreviewStrings.upgrade) {
+                viewModel.showPremiumPage = true
+            }
+            Button(CVPreviewString.cancel, role: .cancel) {}
+        } message: {
+            Text(CVPreviewString.templateLockedMessage)
+        }
+        .alert(CVPreviewString.exportFailed, isPresented: $viewModel.showExportError) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(viewModel.errorMessage)
@@ -98,23 +158,91 @@ struct CVPreviewView: View {
         GeometryReader { geometry in
             ScrollView([.horizontal, .vertical], showsIndicators: false) {
                 VStack {
-                    // CV Template with shadow
-                    SwissMinimalTemplate(
-                        cv: viewModel.cv,
-                        showWatermark: viewModel.shouldAddWatermark
-                    )
-                    .scaleEffect(viewModel.scale)
-                    .shadow(color: .black.opacity(0.2), radius: 15, x: 0, y: 8)
-                    .frame(
-                        width: 595 * viewModel.scale,
-                        height: 842 * viewModel.scale
-                    )
+                    // ═══════════════════════════════════════════
+                    // MARK: - ✅ Dynamic Template Selection
+                    // ═══════════════════════════════════════════
+                    templateView
+                        .scaleEffect(viewModel.scale)
+                        .shadow(color: .black.opacity(0.2), radius: 15, x: 0, y: 8)
+                        .frame(
+                            width: 595 * viewModel.scale,
+                            height: 842 * viewModel.scale
+                        )
                 }
                 .frame(
                     minWidth: geometry.size.width,
                     minHeight: geometry.size.height
                 )
             }
+        }
+    }
+    
+    // ═══════════════════════════════════════════
+    // MARK: - ✅ Template View Builder
+    // ═══════════════════════════════════════════
+    @ViewBuilder
+    private var templateView: some View {
+        switch viewModel.selectedTemplate.id {
+        case "swiss_minimal":
+            SwissMinimalTemplate(
+                cv: viewModel.cv,
+                showWatermark: viewModel.shouldAddWatermark
+            )
+            
+        case "mono_focus":
+            // TODO: إضافة MonoFocusTemplate
+            SwissMinimalTemplate(
+                cv: viewModel.cv,
+                showWatermark: viewModel.shouldAddWatermark
+            )
+            
+        case "dark_sidebar":
+            // TODO: إضافة DarkSidebarTemplate
+            SwissMinimalTemplate(
+                cv: viewModel.cv,
+                showWatermark: viewModel.shouldAddWatermark
+            )
+            
+        case "executive":
+            // TODO: إضافة ExecutiveTemplate
+            SwissMinimalTemplate(
+                cv: viewModel.cv,
+                showWatermark: viewModel.shouldAddWatermark
+            )
+            
+        case "serif_classic":
+            // TODO: إضافة SerifClassicTemplate
+            SwissMinimalTemplate(
+                cv: viewModel.cv,
+                showWatermark: viewModel.shouldAddWatermark
+            )
+            
+        case "bold_type":
+            // TODO: إضافة BoldTypeTemplate
+            SwissMinimalTemplate(
+                cv: viewModel.cv,
+                showWatermark: viewModel.shouldAddWatermark
+            )
+            
+        case "split_column":
+            // TODO: إضافة SplitColumnTemplate
+            SwissMinimalTemplate(
+                cv: viewModel.cv,
+                showWatermark: viewModel.shouldAddWatermark
+            )
+            
+        case "the_modernist":
+            // TODO: إضافة TheModernistTemplate
+            SwissMinimalTemplate(
+                cv: viewModel.cv,
+                showWatermark: viewModel.shouldAddWatermark
+            )
+            
+        default:
+            SwissMinimalTemplate(
+                cv: viewModel.cv,
+                showWatermark: viewModel.shouldAddWatermark
+            )
         }
     }
     
@@ -326,7 +454,7 @@ struct TemplateSelectionCard: View {
                             .padding(12)
                         )
                     
-                    // Premium Badge
+                    // Lock Badge for Premium (not available)
                     if template.isPremium && !template.isAvailable {
                         Image(systemName: "lock.fill")
                             .font(.system(size: 12))
@@ -377,6 +505,10 @@ struct ShareSheet: UIViewControllerRepresentable {
 struct PremiumUpgradeSheet: View {
     @Environment(\.dismiss) private var dismiss
     
+    private var isArabic: Bool {
+        LocalizationManager.shared.isArabic
+    }
+    
     var body: some View {
         NavigationStack {
             VStack(spacing: 24) {
@@ -387,15 +519,15 @@ struct PremiumUpgradeSheet: View {
                     .padding(.top, 40)
                 
                 // Title
-                Text("Upgrade to Premium")
+                Text(isArabic ? "الترقية للنسخة المميزة" : "Upgrade to Premium")
                     .font(.system(size: 24, weight: .bold))
                 
                 // Features
                 VStack(alignment: .leading, spacing: 12) {
-                    featureRow(icon: "infinity", text: "Unlimited PDF Exports")
-                    featureRow(icon: "doc.text", text: "No Watermark")
-                    featureRow(icon: "rectangle.stack", text: "All Premium Templates")
-                    featureRow(icon: "star.fill", text: "Priority Support")
+                    featureRow(icon: "infinity", text: isArabic ? "تصديرات PDF غير محدودة" : "Unlimited PDF Exports")
+                    featureRow(icon: "doc.text", text: isArabic ? "بدون علامة مائية" : "No Watermark")
+                    featureRow(icon: "rectangle.stack", text: isArabic ? "جميع القوالب المميزة" : "All Premium Templates")
+                    featureRow(icon: "star.fill", text: isArabic ? "دعم أولوية" : "Priority Support")
                 }
                 .padding(.horizontal, 32)
                 
@@ -407,7 +539,7 @@ struct PremiumUpgradeSheet: View {
                         // TODO: Purchase
                         dismiss()
                     } label: {
-                        Text("Upgrade Now")
+                        Text(isArabic ? "ترقية الآن" : "Upgrade Now")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
@@ -419,7 +551,7 @@ struct PremiumUpgradeSheet: View {
                     Button {
                         dismiss()
                     } label: {
-                        Text("Maybe Later")
+                        Text(isArabic ? "ربما لاحقاً" : "Maybe Later")
                             .font(.system(size: 14))
                             .foregroundStyle(.secondary)
                     }

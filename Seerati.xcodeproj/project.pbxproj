@@ -6,13 +6,31 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		5CBDA6B12EF77A390003A007 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 5CBDA6B02EF77A390003A007 /* Lottie */; };
+		5CBDA6B42EF77A740003A007 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 5CBDA6B32EF77A740003A007 /* GoogleMobileAds */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		5C8950E52EECFA4400232850 /* Seerati.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Seerati.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		5CBDA6BA2EF77C1B0003A007 /* Exceptions for "Seerati" folder in "Seerati" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 5C8950E42EECFA4400232850 /* Seerati */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		5C8950E72EECFA4400232850 /* Seerati */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				5CBDA6BA2EF77C1B0003A007 /* Exceptions for "Seerati" folder in "Seerati" target */,
+			);
 			path = Seerati;
 			sourceTree = "<group>";
 		};
@@ -23,6 +41,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5CBDA6B42EF77A740003A007 /* GoogleMobileAds in Frameworks */,
+				5CBDA6B12EF77A390003A007 /* Lottie in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +85,8 @@
 			);
 			name = Seerati;
 			packageProductDependencies = (
+				5CBDA6B02EF77A390003A007 /* Lottie */,
+				5CBDA6B32EF77A740003A007 /* GoogleMobileAds */,
 			);
 			productName = Seerati;
 			productReference = 5C8950E52EECFA4400232850 /* Seerati.app */;
@@ -94,6 +116,10 @@
 			);
 			mainGroup = 5C8950DC2EECFA4400232850;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				5CBDA6AF2EF77A390003A007 /* XCRemoteSwiftPackageReference "lottie-ios" */,
+				5CBDA6B22EF77A740003A007 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5C8950E62EECFA4400232850 /* Products */;
 			projectDirPath = "";
@@ -258,11 +284,14 @@
 				DEVELOPMENT_TEAM = ZN3Z5KRWM7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Seerati/Info.plist;
+				INFOPLIST_KEY_NSUserTrackingUsageDescription = "\tنطلب الإذن لاستخدام بياناتك من أجل عرض إعلانات مخصصة تناسب اهتماماتك.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -290,11 +319,14 @@
 				DEVELOPMENT_TEAM = ZN3Z5KRWM7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Seerati/Info.plist;
+				INFOPLIST_KEY_NSUserTrackingUsageDescription = "\tنطلب الإذن لاستخدام بياناتك من أجل عرض إعلانات مخصصة تناسب اهتماماتك.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -334,6 +366,38 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		5CBDA6AF2EF77A390003A007 /* XCRemoteSwiftPackageReference "lottie-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/airbnb/lottie-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.5.2;
+			};
+		};
+		5CBDA6B22EF77A740003A007 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.14.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		5CBDA6B02EF77A390003A007 /* Lottie */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5CBDA6AF2EF77A390003A007 /* XCRemoteSwiftPackageReference "lottie-ios" */;
+			productName = Lottie;
+		};
+		5CBDA6B32EF77A740003A007 /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5CBDA6B22EF77A740003A007 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 5C8950DD2EECFA4400232850 /* Project object */;
 }

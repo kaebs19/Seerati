@@ -4,6 +4,10 @@
 //
 //  Path: Seerati/Models/Template.swift
 //
+//  ─────────────────────────────────────────────────
+//  AR: نموذج قالب السيرة الذاتية - محدث
+//  EN: CV Template Model - Updated
+//  ─────────────────────────────────────────────────
 
 import SwiftUI
 
@@ -24,6 +28,7 @@ struct Template: Identifiable, Hashable {
     let primaryColor: Color
     
     // MARK: - Computed Properties
+    
     /// الاسم حسب اللغة
     var localizedName: String {
         LocalizationManager.shared.isArabic ? nameArabic : name
@@ -32,6 +37,31 @@ struct Template: Identifiable, Hashable {
     /// الوصف حسب اللغة
     var localizedDescription: String {
         LocalizationManager.shared.isArabic ? descriptionArabic : description
+    }
+    
+    // ═══════════════════════════════════════════
+    // MARK: - ✅ NEW: isAvailable Property
+    // ═══════════════════════════════════════════
+    
+    /// هل القالب متاح للاستخدام؟
+    var isAvailable: Bool {
+        // القالب المجاني متاح دائماً
+        if !isPremium {
+            return true
+        }
+        
+        // المستخدم Premium - جميع القوالب متاحة
+        if PurchaseManager.shared.isPremium {
+            return true
+        }
+        
+        // تم شراء هذا القالب سابقاً
+        if PurchaseManager.shared.purchasedTemplates.contains(id) {
+            return true
+        }
+        
+        // القالب غير متاح - يحتاج شراء
+        return false
     }
 }
 

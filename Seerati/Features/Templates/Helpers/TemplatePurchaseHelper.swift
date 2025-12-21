@@ -4,66 +4,72 @@
 //
 //  Path: Seerati/Features/Templates/Helpers/TemplatePurchaseHelper.swift
 //
-//  ─────────────────────────────────────────────
-//  AR: مساعد شراء القوالب عند الضغط عليها
-//  EN: Template purchase helper on tap
-//  ─────────────────────────────────────────────
 
 import SwiftUI
+
+// MARK: - Template Purchase Strings
+private enum TemplatePurchaseStrings {
+    static var purchaseTemplate: String {
+        LocalizationManager.shared.isArabic ? "شراء القالب" : "Purchase Template"
+    }
+    
+    static var cancel: String {
+        LocalizationManager.shared.isArabic ? "إلغاء" : "Cancel"
+    }
+    
+    static var purchase: String {
+        LocalizationManager.shared.isArabic ? "شراء" : "Purchase"
+    }
+    
+    static var purchaseSuccess: String {
+        LocalizationManager.shared.isArabic ? "تم الشراء بنجاح" : "Purchase Successful"
+    }
+    
+    static var purchaseFailed: String {
+        LocalizationManager.shared.isArabic ? "فشل الشراء" : "Purchase Failed"
+    }
+    
+    static func purchaseMessage(_ name: String) -> String {
+        LocalizationManager.shared.isArabic
+            ? "هل تريد شراء قالب \(name)؟ أو يمكنك الترقية للنسخة المميزة للحصول على جميع القوالب."
+            : "Would you like to purchase the \(name) template? Or upgrade to Premium for all templates."
+    }
+    
+    static var upgradeToPremium: String {
+        LocalizationManager.shared.isArabic ? "ترقية للمميز" : "Upgrade to Premium"
+    }
+}
 
 // MARK: - Template Purchase Alert Modifier
 struct TemplatePurchaseModifier: ViewModifier {
     
     @Binding var templateToPurchase: Template?
-    @State private var isPurchasing = false
-    @State private var showSuccess = false
-    @State private var showError = false
+    @State private var showPremiumView = false
     
     func body(content: Content) -> some View {
         content
             .alert(
-                SettingsStrings.purchaseTemplate,
+                TemplatePurchaseStrings.purchaseTemplate,
                 isPresented: Binding(
                     get: { templateToPurchase != nil },
                     set: { if !$0 { templateToPurchase = nil } }
                 ),
                 presenting: templateToPurchase
             ) { template in
-                Button(SettingsStrings.cancel, role: .cancel) {
+                Button(TemplatePurchaseStrings.cancel, role: .cancel) {
                     templateToPurchase = nil
                 }
                 
-                Button(SettingsStrings.purchase) {
-                    Task {
-                        await purchaseTemplate(template)
-                    }
+                Button(TemplatePurchaseStrings.upgradeToPremium) {
+                    templateToPurchase = nil
+                    showPremiumView = true
                 }
             } message: { template in
-                Text(SettingsStrings.purchaseTemplateMessage(
-                    template.localizedName,
-                    price: "\(PurchaseManager.shared.templatePrice) ر.س"
-                ))
+                Text(TemplatePurchaseStrings.purchaseMessage(template.localizedName))
             }
-            .alert(SettingsStrings.purchaseSuccess, isPresented: $showSuccess) {
-                Button("OK", role: .cancel) {}
+            .sheet(isPresented: $showPremiumView) {
+                PremiumView()
             }
-            .alert(SettingsStrings.purchaseFailed, isPresented: $showError) {
-                Button("OK", role: .cancel) {}
-            }
-    }
-    
-    @MainActor
-    private func purchaseTemplate(_ template: Template) async {
-        isPurchasing = true
-        let success = await PurchaseManager.shared.purchaseTemplate(template.id)
-        isPurchasing = false
-        
-        if success {
-            showSuccess = true
-        } else {
-            showError = true
-        }
-        templateToPurchase = nil
     }
 }
 
@@ -77,11 +83,6 @@ extension View {
 struct TemplateSelectionHandler {
     
     /// معالجة اختيار القالب
-    /// - Parameters:
-    ///   - template: القالب المختار
-    ///   - onFreeTemplate: callback للقالب المجاني
-    ///   - onPurchasedTemplate: callback للقالب المشترى
-    ///   - onNeedsPurchase: callback للقالب الذي يحتاج شراء
     static func handleSelection(
         _ template: Template,
         onFreeTemplate: () -> Void,
@@ -108,7 +109,7 @@ struct TemplateSelectionHandler {
             return
         }
         
-        // يحتاج شراء
+        // يحتاج شراء أو ترقية
         onNeedsPurchase(template)
     }
 }

@@ -5,8 +5,8 @@
 //  Path: Seerati/Features/CVPreview/Templates/SwissMinimalTemplate.swift
 //
 //  ─────────────────────────────────────────────────
-//  AR: قالب Swiss Minimal - القالب المجاني المحسّن
-//  EN: Swiss Minimal Template - Enhanced Free Template
+//  AR: قالب Swiss Minimal - محدث مع الصورة والمعلومات الشخصية
+//  EN: Swiss Minimal Template - Updated with Photo & Personal Info
 //  ─────────────────────────────────────────────────
 
 import SwiftUI
@@ -17,6 +17,11 @@ struct SwissMinimalTemplate: View {
     // MARK: - Properties
     let cv: CVData
     var showWatermark: Bool = false
+    
+    // MARK: - Environment
+    private var isArabic: Bool {
+        LocalizationManager.shared.isArabic
+    }
     
     // MARK: - Colors
     private let primaryColor = Color(hex: "1A1A1A")
@@ -32,7 +37,7 @@ struct SwissMinimalTemplate: View {
             backgroundColor
             
             VStack(alignment: .leading, spacing: 0) {
-                // Header
+                // Header with Photo
                 headerSection
                     .padding(.bottom, 12)
                 
@@ -64,24 +69,88 @@ struct SwissMinimalTemplate: View {
         }
         .frame(width: 595, height: 842) // A4 Size
         .clipped()
+        .environment(\.layoutDirection, isArabic ? .rightToLeft : .leftToRight)
     }
     
-    // MARK: - Header Section
+    // ═══════════════════════════════════════════
+    // MARK: - ✅ Header Section with Photo
+    // ═══════════════════════════════════════════
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            // Name
-            Text(cv.fullName.isEmpty ? "Your Name" : cv.fullName)
-                .font(.system(size: 26, weight: .bold, design: .default))
-                .foregroundStyle(primaryColor)
-                .lineLimit(1)
-            
-            // Job Title
-            if !cv.jobTitle.isEmpty {
-                Text(cv.jobTitle.uppercased())
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(accentColor)
-                    .tracking(1.5)
+        HStack(alignment: .top, spacing: 15) {
+            // Profile Photo
+            if let photoData = cv.photoData, let uiImage = UIImage(data: photoData) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 70, height: 70)
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(accentColor.opacity(0.3), lineWidth: 2)
+                    )
+            } else {
+                // Default Avatar
+                ZStack {
+                    Circle()
+                        .fill(accentColor.opacity(0.1))
+                        .frame(width: 70, height: 70)
+                    
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 30))
+                        .foregroundStyle(accentColor.opacity(0.5))
+                }
             }
+            
+            // Name & Title
+            VStack(alignment: .leading, spacing: 4) {
+                // Name
+                Text(cv.fullName.isEmpty ? "Your Name" : cv.fullName)
+                    .font(.system(size: 26, weight: .bold, design: .default))
+                    .foregroundStyle(primaryColor)
+                    .lineLimit(1)
+                
+                // Job Title
+                if !cv.jobTitle.isEmpty {
+                    Text(cv.jobTitle.uppercased())
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(accentColor)
+                        .tracking(1.5)
+                }
+                
+                // Contact Info Row
+                contactInfoRow
+            }
+            
+            Spacer()
+        }
+    }
+    
+    // MARK: - Contact Info Row (Under Name)
+    private var contactInfoRow: some View {
+        HStack(spacing: 12) {
+            if !cv.email.isEmpty {
+                miniContactItem(icon: "envelope.fill", text: cv.email)
+            }
+            if !cv.phone.isEmpty {
+                miniContactItem(icon: "phone.fill", text: cv.phone)
+            }
+            if !cv.location.isEmpty {
+                miniContactItem(icon: "location.fill", text: cv.location)
+            }
+        }
+        .padding(.top, 4)
+    }
+    
+    private func miniContactItem(icon: String, text: String) -> some View {
+        HStack(spacing: 3) {
+            Image(systemName: icon)
+                .font(.system(size: 8))
+                .foregroundStyle(accentColor)
+            
+            Text(text)
+                .font(.system(size: 8))
+                .foregroundStyle(secondaryColor)
+                .lineLimit(1)
         }
     }
     
@@ -90,7 +159,7 @@ struct SwissMinimalTemplate: View {
         VStack(alignment: .leading, spacing: 16) {
             // Summary/Profile
             if !cv.summary.isEmpty {
-                sectionView(title: "PROFILE") {
+                sectionView(title: isArabic ? "نبذة عني" : "PROFILE") {
                     Text(cv.summary)
                         .font(.system(size: 9))
                         .foregroundStyle(secondaryColor)
@@ -101,7 +170,7 @@ struct SwissMinimalTemplate: View {
             
             // Experience
             if !cv.experiences.isEmpty {
-                sectionView(title: "EXPERIENCE") {
+                sectionView(title: isArabic ? "الخبرات العملية" : "EXPERIENCE") {
                     VStack(alignment: .leading, spacing: 10) {
                         ForEach(cv.experiences.sorted { $0.sortOrder < $1.sortOrder }, id: \.id) { exp in
                             experienceItem(exp)
@@ -112,7 +181,7 @@ struct SwissMinimalTemplate: View {
             
             // Education
             if !cv.educations.isEmpty {
-                sectionView(title: "EDUCATION") {
+                sectionView(title: isArabic ? "التعليم" : "EDUCATION") {
                     VStack(alignment: .leading, spacing: 8) {
                         ForEach(cv.educations.sorted { $0.sortOrder < $1.sortOrder }, id: \.id) { edu in
                             educationItem(edu)
@@ -126,56 +195,63 @@ struct SwissMinimalTemplate: View {
     // MARK: - Side Column
     private var sideColumn: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Personal Info (if any visible)
+            // ═══════════════════════════════════════════
+            // MARK: - ✅ Personal Info Section
+            // ═══════════════════════════════════════════
             if hasVisiblePersonalInfo {
-                sectionView(title: "PERSONAL") {
+                sectionView(title: isArabic ? "معلومات شخصية" : "PERSONAL") {
                     VStack(alignment: .leading, spacing: 5) {
-                        if cv.showDateOfBirth, cv.dateOfBirth != nil {
-                            infoRow(icon: "calendar", text: cv.formattedDateOfBirth)
+                        // تاريخ الميلاد مع العمر
+                        if cv.showDateOfBirth, let dob = cv.dateOfBirth {
+                            let ageText = cv.age != nil ? " (\(cv.age!) \(isArabic ? "سنة" : "yrs"))" : ""
+                            infoRow(icon: "calendar", text: cv.formattedDateOfBirth + ageText)
                         }
+                        
+                        // الجنسية
                         if cv.showNationality, !cv.nationality.isEmpty {
                             infoRow(icon: "globe", text: cv.nationality)
                         }
+                        
+                        // الجنس
                         if cv.showGender, cv.gender != .preferNotToSay {
-                            infoRow(icon: "person.fill", text: cv.gender.localizedName)
+                            infoRow(icon: "person.fill", text: isArabic ? cv.gender.localizedName : cv.gender.englishName)
                         }
+                        
+                        // الحالة الاجتماعية
                         if cv.showMaritalStatus, cv.maritalStatus != .preferNotToSay {
-                            infoRow(icon: "heart.fill", text: cv.maritalStatus.localizedName)
+                            infoRow(icon: "heart.fill", text: isArabic ? cv.maritalStatus.localizedName : cv.maritalStatus.englishName)
                         }
+                        
+                        // رخصة القيادة
                         if cv.showDrivingLicense, cv.drivingLicense != .none {
-                            infoRow(icon: "car.fill", text: cv.drivingLicense.localizedName)
+                            infoRow(icon: "car.fill", text: isArabic ? cv.drivingLicense.localizedName : cv.drivingLicense.englishName)
                         }
+                        
+                        // حالة الإقامة
                         if cv.showVisaStatus {
-                            infoRow(icon: "doc.text.fill", text: cv.visaStatus.localizedName)
+                            infoRow(icon: "doc.text.fill", text: isArabic ? cv.visaStatus.localizedName : cv.visaStatus.englishName)
                         }
                     }
                 }
             }
             
-            // Contact
-            sectionView(title: "CONTACT") {
-                VStack(alignment: .leading, spacing: 5) {
-                    if !cv.email.isEmpty {
-                        contactRow(icon: "envelope.fill", text: cv.email)
-                    }
-                    if !cv.phone.isEmpty {
-                        contactRow(icon: "phone.fill", text: cv.phone)
-                    }
-                    if !cv.location.isEmpty {
-                        contactRow(icon: "location.fill", text: cv.location)
-                    }
-                    if !cv.website.isEmpty {
-                        contactRow(icon: "globe", text: cv.website)
-                    }
-                    if !cv.linkedin.isEmpty {
-                        contactRow(icon: "link", text: cv.linkedin)
+            // Contact (Website & LinkedIn)
+            if !cv.website.isEmpty || !cv.linkedin.isEmpty {
+                sectionView(title: isArabic ? "روابط" : "LINKS") {
+                    VStack(alignment: .leading, spacing: 5) {
+                        if !cv.website.isEmpty {
+                            contactRow(icon: "globe", text: cv.website)
+                        }
+                        if !cv.linkedin.isEmpty {
+                            contactRow(icon: "link", text: cv.linkedin)
+                        }
                     }
                 }
             }
             
             // Skills
             if !cv.skills.isEmpty {
-                sectionView(title: "SKILLS") {
+                sectionView(title: isArabic ? "المهارات" : "SKILLS") {
                     skillsGrid
                 }
             }
@@ -205,7 +281,7 @@ struct SwissMinimalTemplate: View {
                 
                 Spacer()
                 
-                Text(exp.dateRangeText)
+                Text(isArabic ? exp.dateRangeTextArabic : exp.dateRangeText)
                     .font(.system(size: 8))
                     .foregroundStyle(secondaryColor)
             }
@@ -214,6 +290,13 @@ struct SwissMinimalTemplate: View {
             Text(exp.company)
                 .font(.system(size: 9))
                 .foregroundStyle(accentColor)
+            
+            // Location
+            if !exp.location.isEmpty {
+                Text(exp.location)
+                    .font(.system(size: 8))
+                    .foregroundStyle(secondaryColor)
+            }
             
             // Description
             if !exp.jobDescription.isEmpty {
@@ -256,6 +339,17 @@ struct SwissMinimalTemplate: View {
                     .foregroundStyle(secondaryColor)
             }
             
+            // Location
+            if !edu.location.isEmpty {
+                HStack(spacing: 3) {
+                    Image(systemName: "location")
+                        .font(.system(size: 7))
+                    Text(edu.location)
+                        .font(.system(size: 8))
+                }
+                .foregroundStyle(secondaryColor)
+            }
+            
             // GPA
             if !edu.gpa.isEmpty {
                 HStack(spacing: 3) {
@@ -296,7 +390,7 @@ struct SwissMinimalTemplate: View {
             Text(text)
                 .font(.system(size: 8))
                 .foregroundStyle(secondaryColor)
-                .lineLimit(1)
+                .lineLimit(2)
         }
     }
     
@@ -340,20 +434,11 @@ struct SwissMinimalTemplate: View {
     }
 }
 
-
 // MARK: - Preview
 #Preview {
     ScrollView {
         SwissMinimalTemplate(
-            cv: CVData(
-                cvName: "Preview CV",
-                fullName: "Ahmed Al-Rashid",
-                jobTitle: "Senior iOS Developer",
-                email: "ahmed@example.com",
-                phone: "+966 50 000 0000",
-                location: "Riyadh, Saudi Arabia",
-                summary: "Passionate iOS developer with 5+ years of experience."
-            ),
+            cv: CVData.preview,
             showWatermark: true
         )
         .border(Color.gray.opacity(0.3))

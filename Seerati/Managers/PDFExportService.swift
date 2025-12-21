@@ -5,8 +5,8 @@
 //  Path: Seerati/Managers/PDFExportService.swift
 //
 //  ─────────────────────────────────────────────────
-//  AR: خدمة تصدير السيرة الذاتية كـ PDF
-//  EN: CV PDF Export Service
+//  AR: خدمة تصدير السيرة الذاتية كـ PDF - محدث
+//  EN: CV PDF Export Service - Updated with Personal Info
 //  ─────────────────────────────────────────────────
 
 import SwiftUI
@@ -30,6 +30,11 @@ final class PDFExportService {
     private let secondaryColor = UIColor(red: 0.4, green: 0.4, blue: 0.4, alpha: 1.0)
     private let accentColor = UIColor(red: 0.15, green: 0.39, blue: 0.92, alpha: 1.0)
     private let dividerColor = UIColor(red: 0.9, green: 0.9, blue: 0.9, alpha: 1.0)
+    
+    // MARK: - Language
+    private var isArabic: Bool {
+        LocalizationManager.shared.isArabic
+    }
     
     // MARK: - Fonts
     private func titleFont() -> UIFont {
@@ -66,22 +71,21 @@ final class PDFExportService {
             
             var yPosition: CGFloat = margin
             let contentWidth = pageWidth - (margin * 2)
-            let mainColumnWidth = contentWidth * 0.65
-            let sideColumnWidth = contentWidth * 0.30
+            let mainColumnWidth = contentWidth * 0.62
+            let sideColumnWidth = contentWidth * 0.33
             let sideColumnX = margin + mainColumnWidth + (contentWidth * 0.05)
             
             // ═══════════════════════════════════════════
-            // MARK: Header Section
+            // MARK: Header Section with Photo
             // ═══════════════════════════════════════════
 
-            // ✅ رسم الصورة الشخصية
             let photoSize: CGFloat = 70
             var textStartX = margin
 
+            // رسم الصورة الشخصية
             if let photoData = cv.photoData, let image = UIImage(data: photoData) {
                 let photoRect = CGRect(x: margin, y: yPosition, width: photoSize, height: photoSize)
                 
-                // رسم الصورة دائرية
                 let context = UIGraphicsGetCurrentContext()
                 context?.saveGState()
                 
@@ -91,7 +95,11 @@ final class PDFExportService {
                 
                 context?.restoreGState()
                 
-                // إزاحة النص بجانب الصورة
+                // إطار حول الصورة
+                UIColor(red: 0.15, green: 0.39, blue: 0.92, alpha: 0.3).setStroke()
+                circlePath.lineWidth = 2
+                circlePath.stroke()
+                
                 textStartX = margin + photoSize + 15
             }
 
@@ -110,15 +118,28 @@ final class PDFExportService {
                     .font: subtitleFont(),
                     .foregroundColor: accentColor
                 ]
-                let jobRect = CGRect(x: textStartX, y: yPosition + 38, width: contentWidth - (textStartX - margin), height: 20)
+                let jobRect = CGRect(x: textStartX, y: yPosition + 35, width: contentWidth - (textStartX - margin), height: 20)
                 cv.jobTitle.uppercased().draw(in: jobRect, withAttributes: jobAttrs)
+            }
+            
+            // Contact Info Row (تحت الاسم)
+            var contactY = yPosition + 55
+            let contactItems = buildContactItems(cv: cv)
+            if !contactItems.isEmpty {
+                let contactAttrs: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 9),
+                    .foregroundColor: secondaryColor
+                ]
+                let contactText = contactItems.joined(separator: "  •  ")
+                let contactRect = CGRect(x: textStartX, y: contactY, width: contentWidth - (textStartX - margin), height: 15)
+                contactText.draw(in: contactRect, withAttributes: contactAttrs)
             }
 
             // تحديد yPosition بناءً على وجود الصورة
             if cv.photoData != nil {
                 yPosition += photoSize + 15
             } else {
-                yPosition += 63
+                yPosition += 75
             }
 
             // Divider
@@ -130,7 +151,6 @@ final class PDFExportService {
             // MARK: Two Column Layout
             // ═══════════════════════════════════════════
             
-            let columnsStartY = yPosition
             var mainColumnY = yPosition
             var sideColumnY = yPosition
             
@@ -141,7 +161,7 @@ final class PDFExportService {
             // Summary
             if !cv.summary.isEmpty {
                 mainColumnY = drawSection(
-                    title: "PROFILE",
+                    title: isArabic ? "نبذة عني" : "PROFILE",
                     at: mainColumnY,
                     x: margin,
                     width: mainColumnWidth
@@ -160,7 +180,7 @@ final class PDFExportService {
             // Experience
             if !cv.experiences.isEmpty {
                 mainColumnY = drawSection(
-                    title: "EXPERIENCE",
+                    title: isArabic ? "الخبرات العملية" : "EXPERIENCE",
                     at: mainColumnY,
                     x: margin,
                     width: mainColumnWidth
@@ -175,7 +195,7 @@ final class PDFExportService {
             // Education
             if !cv.educations.isEmpty {
                 mainColumnY = drawSection(
-                    title: "EDUCATION",
+                    title: isArabic ? "التعليم" : "EDUCATION",
                     at: mainColumnY,
                     x: margin,
                     width: mainColumnWidth
@@ -190,36 +210,81 @@ final class PDFExportService {
             // SIDE COLUMN (Right)
             // ─────────────────────────────────────────
             
-            // Contact
-            sideColumnY = drawSection(
-                title: "CONTACT",
-                at: sideColumnY,
-                x: sideColumnX,
-                width: sideColumnWidth
-            )
+            // ═══════════════════════════════════════════
+            // MARK: ✅ Personal Info Section
+            // ═══════════════════════════════════════════
+            if hasVisiblePersonalInfo(cv: cv) {
+                sideColumnY = drawSection(
+                    title: isArabic ? "معلومات شخصية" : "PERSONAL",
+                    at: sideColumnY,
+                    x: sideColumnX,
+                    width: sideColumnWidth
+                )
+                
+                // تاريخ الميلاد مع العمر
+                if cv.showDateOfBirth, cv.dateOfBirth != nil {
+                    var dobText = cv.formattedDateOfBirth
+                    if let age = cv.age {
+                        dobText += " (\(age) \(isArabic ? "سنة" : "yrs"))"
+                    }
+                    sideColumnY = drawInfoRow(icon: "📅", text: dobText, at: sideColumnY, x: sideColumnX, width: sideColumnWidth)
+                }
+                
+                // الجنسية
+                if cv.showNationality, !cv.nationality.isEmpty {
+                    sideColumnY = drawInfoRow(icon: "🌍", text: cv.nationality, at: sideColumnY, x: sideColumnX, width: sideColumnWidth)
+                }
+                
+                // الجنس
+                if cv.showGender, cv.gender != .preferNotToSay {
+                    let genderText = isArabic ? cv.gender.localizedName : cv.gender.englishName
+                    sideColumnY = drawInfoRow(icon: "👤", text: genderText, at: sideColumnY, x: sideColumnX, width: sideColumnWidth)
+                }
+                
+                // الحالة الاجتماعية
+                if cv.showMaritalStatus, cv.maritalStatus != .preferNotToSay {
+                    let statusText = isArabic ? cv.maritalStatus.localizedName : cv.maritalStatus.englishName
+                    sideColumnY = drawInfoRow(icon: "💍", text: statusText, at: sideColumnY, x: sideColumnX, width: sideColumnWidth)
+                }
+                
+                // رخصة القيادة
+                if cv.showDrivingLicense, cv.drivingLicense != .none {
+                    let licenseText = isArabic ? cv.drivingLicense.localizedName : cv.drivingLicense.englishName
+                    sideColumnY = drawInfoRow(icon: "🚗", text: licenseText, at: sideColumnY, x: sideColumnX, width: sideColumnWidth)
+                }
+                
+                // حالة الإقامة
+                if cv.showVisaStatus {
+                    let visaText = isArabic ? cv.visaStatus.localizedName : cv.visaStatus.englishName
+                    sideColumnY = drawInfoRow(icon: "📄", text: visaText, at: sideColumnY, x: sideColumnX, width: sideColumnWidth)
+                }
+                
+                sideColumnY += 15
+            }
             
-            if !cv.email.isEmpty {
-                sideColumnY = drawContactRow(icon: "✉", text: cv.email, at: sideColumnY, x: sideColumnX, width: sideColumnWidth)
+            // Links (Website & LinkedIn)
+            if !cv.website.isEmpty || !cv.linkedin.isEmpty {
+                sideColumnY = drawSection(
+                    title: isArabic ? "روابط" : "LINKS",
+                    at: sideColumnY,
+                    x: sideColumnX,
+                    width: sideColumnWidth
+                )
+                
+                if !cv.website.isEmpty {
+                    sideColumnY = drawContactRow(icon: "◉", text: cv.website, at: sideColumnY, x: sideColumnX, width: sideColumnWidth)
+                }
+                if !cv.linkedin.isEmpty {
+                    sideColumnY = drawContactRow(icon: "⬡", text: cv.linkedin, at: sideColumnY, x: sideColumnX, width: sideColumnWidth)
+                }
+                
+                sideColumnY += 15
             }
-            if !cv.phone.isEmpty {
-                sideColumnY = drawContactRow(icon: "☏", text: cv.phone, at: sideColumnY, x: sideColumnX, width: sideColumnWidth)
-            }
-            if !cv.location.isEmpty {
-                sideColumnY = drawContactRow(icon: "⌖", text: cv.location, at: sideColumnY, x: sideColumnX, width: sideColumnWidth)
-            }
-            if !cv.website.isEmpty {
-                sideColumnY = drawContactRow(icon: "◉", text: cv.website, at: sideColumnY, x: sideColumnX, width: sideColumnWidth)
-            }
-            if !cv.linkedin.isEmpty {
-                sideColumnY = drawContactRow(icon: "⬡", text: cv.linkedin, at: sideColumnY, x: sideColumnX, width: sideColumnWidth)
-            }
-            
-            sideColumnY += 15
             
             // Skills
             if !cv.skills.isEmpty {
                 sideColumnY = drawSection(
-                    title: "SKILLS",
+                    title: isArabic ? "المهارات" : "SKILLS",
                     at: sideColumnY,
                     x: sideColumnX,
                     width: sideColumnWidth
@@ -240,67 +305,26 @@ final class PDFExportService {
         return data
     }
     
-    // MARK: - Drawing Helpers
-    
-    private func drawHeader(cv: CVData, in rect: CGRect) {
-        let x = rect.origin.x
-        var currentY = rect.origin.y
-        
-        // ✅ رسم الصورة الشخصية
-        let photoSize: CGFloat = 70
-        var textStartX = x
-        
-        if let photoData = cv.photoData, let image = UIImage(data: photoData) {
-            let photoRect = CGRect(x: x, y: currentY, width: photoSize, height: photoSize)
-            
-            // رسم الصورة دائرية
-            let context = UIGraphicsGetCurrentContext()
-            context?.saveGState()
-            
-            let circlePath = UIBezierPath(ovalIn: photoRect)
-            circlePath.addClip()
-            image.draw(in: photoRect)
-            
-            context?.restoreGState()
-            
-            // إزاحة النص بجانب الصورة
-            textStartX = x + photoSize + 15
-        }
-        
-        // الاسم
-        let nameAttrs: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: 24, weight: .bold),
-            .foregroundColor: UIColor(hex: "1A1A1A")
-        ]
-        let name = cv.fullName.isEmpty ? "Your Name" : cv.fullName
-        name.draw(at: CGPoint(x: textStartX, y: currentY), withAttributes: nameAttrs)
-        currentY += 30
-        
-        // المسمى الوظيفي
-        if !cv.jobTitle.isEmpty {
-            let titleAttrs: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 12, weight: .semibold),
-                .foregroundColor: UIColor(hex: "2563EB")
-            ]
-            cv.jobTitle.uppercased().draw(at: CGPoint(x: textStartX, y: currentY), withAttributes: titleAttrs)
-        }
-        
-        // تعديل currentY ليكون أسفل الصورة إذا كانت موجودة
-        if cv.photoData != nil {
-            currentY = rect.origin.y + photoSize + 10
-        } else {
-            currentY += 25
-        }
-        
-        // خط فاصل
-        let lineY = currentY + 5
-        let linePath = UIBezierPath()
-        linePath.move(to: CGPoint(x: x, y: lineY))
-        linePath.addLine(to: CGPoint(x: rect.maxX, y: lineY))
-        UIColor(hex: "E5E5E5").setStroke()
-        linePath.lineWidth = 1
-        linePath.stroke()
+    // MARK: - Helper: Build Contact Items
+    private func buildContactItems(cv: CVData) -> [String] {
+        var items: [String] = []
+        if !cv.email.isEmpty { items.append("✉ \(cv.email)") }
+        if !cv.phone.isEmpty { items.append("☎ \(cv.phone)") }
+        if !cv.location.isEmpty { items.append("📍 \(cv.location)") }
+        return items
     }
+    
+    // MARK: - Helper: Has Visible Personal Info
+    private func hasVisiblePersonalInfo(cv: CVData) -> Bool {
+        (cv.showDateOfBirth && cv.dateOfBirth != nil) ||
+        (cv.showNationality && !cv.nationality.isEmpty) ||
+        (cv.showGender && cv.gender != .preferNotToSay) ||
+        (cv.showMaritalStatus && cv.maritalStatus != .preferNotToSay) ||
+        (cv.showDrivingLicense && cv.drivingLicense != .none) ||
+        cv.showVisaStatus
+    }
+    
+    // MARK: - Drawing Helpers
     
     private func drawDivider(at y: CGFloat, width: CGFloat, x: CGFloat) {
         let path = UIBezierPath()
@@ -323,11 +347,6 @@ final class PDFExportService {
     }
     
     private func drawText(_ text: String, at y: CGFloat, x: CGFloat, width: CGFloat, font: UIFont, color: UIColor) -> CGFloat {
-        let attrs: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .foregroundColor: color
-        ]
-        
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineSpacing = 3
         
@@ -373,11 +392,21 @@ final class PDFExportService {
             .font: captionFont(),
             .foregroundColor: secondaryColor
         ]
-        let dateText = exp.dateRangeText
+        let dateText = isArabic ? exp.dateRangeTextArabic : exp.dateRangeText
         let dateSize = dateText.size(withAttributes: dateAttrs)
         let dateX = x + width - dateSize.width
         dateText.draw(at: CGPoint(x: dateX, y: currentY), withAttributes: dateAttrs)
         currentY += 14
+        
+        // Location
+        if !exp.location.isEmpty {
+            let locAttrs: [NSAttributedString.Key: Any] = [
+                .font: captionFont(),
+                .foregroundColor: secondaryColor
+            ]
+            ("📍 " + exp.location).draw(at: CGPoint(x: x, y: currentY), withAttributes: locAttrs)
+            currentY += 12
+        }
         
         // Description
         if !exp.jobDescription.isEmpty {
@@ -429,17 +458,27 @@ final class PDFExportService {
                 .font: captionFont(),
                 .foregroundColor: secondaryColor
             ]
-            edu.fieldOfStudy.draw(at: CGPoint(x: x, y: currentY), withAttributes: fieldAttrs)
+            ("📚 " + edu.fieldOfStudy).draw(at: CGPoint(x: x, y: currentY), withAttributes: fieldAttrs)
+            currentY += 12
+        }
+        
+        // Location
+        if !edu.location.isEmpty {
+            let locAttrs: [NSAttributedString.Key: Any] = [
+                .font: captionFont(),
+                .foregroundColor: secondaryColor
+            ]
+            ("📍 " + edu.location).draw(at: CGPoint(x: x, y: currentY), withAttributes: locAttrs)
             currentY += 12
         }
         
         // GPA
         if !edu.gpa.isEmpty {
             let gpaAttrs: [NSAttributedString.Key: Any] = [
-                .font: captionFont(),
+                .font: UIFont.systemFont(ofSize: 9, weight: .medium),
                 .foregroundColor: UIColor.orange
             ]
-            "GPA: \(edu.gpa)".draw(at: CGPoint(x: x, y: currentY), withAttributes: gpaAttrs)
+            ("⭐ GPA: \(edu.gpa)").draw(at: CGPoint(x: x, y: currentY), withAttributes: gpaAttrs)
             currentY += 12
         }
         
@@ -458,10 +497,29 @@ final class PDFExportService {
             .foregroundColor: secondaryColor
         ]
         
-        // Truncate if too long
         let maxTextWidth = width - 18
         let truncatedText = truncateText(text, width: maxTextWidth, font: captionFont())
         truncatedText.draw(at: CGPoint(x: x + 16, y: y), withAttributes: textAttrs)
+        
+        return y + 14
+    }
+    
+    // ✅ جديد: رسم صف معلومات شخصية
+    private func drawInfoRow(icon: String, text: String, at y: CGFloat, x: CGFloat, width: CGFloat) -> CGFloat {
+        let iconAttrs: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 10),
+            .foregroundColor: accentColor
+        ]
+        icon.draw(at: CGPoint(x: x, y: y), withAttributes: iconAttrs)
+        
+        let textAttrs: [NSAttributedString.Key: Any] = [
+            .font: captionFont(),
+            .foregroundColor: secondaryColor
+        ]
+        
+        let maxTextWidth = width - 20
+        let truncatedText = truncateText(text, width: maxTextWidth, font: captionFont())
+        truncatedText.draw(at: CGPoint(x: x + 18, y: y), withAttributes: textAttrs)
         
         return y + 14
     }

@@ -5,8 +5,8 @@
 //  Path: Seerati/Features/Settings/Views/SettingsMainView.swift
 //
 //  ─────────────────────────────────────────────────
-//  AR: شاشة الإعدادات الرئيسية
-//  EN: Main Settings Screen
+//  AR: شاشة الإعدادات الرئيسية - محدث مع Premium
+//  EN: Main Settings Screen - Updated with Premium
 //  ─────────────────────────────────────────────────
 
 import SwiftUI
@@ -19,6 +19,23 @@ private enum SettingsViewStrings {
     
     static var done: String {
         LocalizationManager.shared.isArabic ? "تم" : "Done"
+    }
+    
+    // Premium Section
+    static var upgradeToPremium: String {
+        LocalizationManager.shared.isArabic ? "ترقية للنسخة المميزة" : "Upgrade to Premium"
+    }
+    
+    static var unlockFeatures: String {
+        LocalizationManager.shared.isArabic ? "افتح جميع المميزات" : "Unlock all features"
+    }
+    
+    static var youArePremium: String {
+        LocalizationManager.shared.isArabic ? "أنت مشترك مميز" : "You're Premium"
+    }
+    
+    static var enjoyFeatures: String {
+        LocalizationManager.shared.isArabic ? "استمتع بجميع المميزات" : "Enjoy all features"
     }
     
     // Profile Section
@@ -55,14 +72,6 @@ private enum SettingsViewStrings {
         LocalizationManager.shared.isArabic ? "الإشعارات" : "Notifications"
     }
     
-    static var enabled: String {
-        LocalizationManager.shared.isArabic ? "مفعّل" : "Enabled"
-    }
-    
-    static var disabled: String {
-        LocalizationManager.shared.isArabic ? "معطّل" : "Disabled"
-    }
-    
     // Storage Section
     static var storage: String {
         LocalizationManager.shared.isArabic ? "التخزين" : "Storage"
@@ -80,6 +89,23 @@ private enum SettingsViewStrings {
         LocalizationManager.shared.isArabic ? "حذف جميع البيانات" : "Delete All Data"
     }
     
+    // Legal Section
+    static var legal: String {
+        LocalizationManager.shared.isArabic ? "قانوني" : "Legal"
+    }
+    
+    static var termsOfUse: String {
+        LocalizationManager.shared.isArabic ? "شروط الاستخدام" : "Terms of Use"
+    }
+    
+    static var privacyPolicy: String {
+        LocalizationManager.shared.isArabic ? "سياسة الخصوصية" : "Privacy Policy"
+    }
+    
+    static var contactUs: String {
+        LocalizationManager.shared.isArabic ? "اتصل بنا" : "Contact Us"
+    }
+    
     // About Section
     static var about: String {
         LocalizationManager.shared.isArabic ? "حول التطبيق" : "About"
@@ -95,6 +121,10 @@ private enum SettingsViewStrings {
     
     static var shareApp: String {
         LocalizationManager.shared.isArabic ? "شارك التطبيق" : "Share App"
+    }
+    
+    static var restorePurchases: String {
+        LocalizationManager.shared.isArabic ? "استعادة المشتريات" : "Restore Purchases"
     }
     
     // Alerts
@@ -129,6 +159,14 @@ private enum SettingsViewStrings {
     static var cancel: String {
         LocalizationManager.shared.isArabic ? "إلغاء" : "Cancel"
     }
+    
+    static var restoreSuccess: String {
+        LocalizationManager.shared.isArabic ? "تم استعادة المشتريات" : "Purchases Restored"
+    }
+    
+    static var restoreError: String {
+        LocalizationManager.shared.isArabic ? "لم يتم العثور على مشتريات" : "No Purchases Found"
+    }
 }
 
 // MARK: - Settings Main View
@@ -142,11 +180,34 @@ struct SettingsMainView: View {
     @State private var showLanguagePicker = false
     @State private var showDeleteAlert = false
     @State private var showResetAlert = false
+    @State private var showPremiumView = false
+    @State private var isRestoring = false
+    @State private var showRestoreSuccess = false
+    @State private var showRestoreError = false
+    
+    // Legal Sheets
+    @State private var showTerms = false
+    @State private var showPrivacy = false
+    @State private var showContact = false
+    
+    @State private var showThemePicker = false
+
+    
+    private let purchaseManager = PurchaseManager.shared
     
     // MARK: - Body
     var body: some View {
         NavigationStack {
             List {
+                // ═══════════════════════════════════════════
+                // MARK: - ✅ Premium Card Section
+                // ═══════════════════════════════════════════
+                Section {
+                    premiumCardButton
+                }
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+                
                 // Profile Section
                 Section {
                     Button {
@@ -165,6 +226,7 @@ struct SettingsMainView: View {
                 
                 // App Section
                 Section {
+                    // Language
                     Button {
                         showLanguagePicker = true
                     } label: {
@@ -176,13 +238,19 @@ struct SettingsMainView: View {
                         )
                     }
                     
-                    SettingsRow(
-                        icon: "paintbrush.fill",
-                        iconColor: .purple,
-                        title: SettingsViewStrings.appearance,
-                        value: SettingsViewStrings.automatic
-                    )
+                    // ✅ Appearance - مع اختيار الثيم
+                    Button {
+                        showThemePicker = true
+                    } label: {
+                        SettingsRow(
+                            icon: "paintbrush.fill",
+                            iconColor: .purple,
+                            title: SettingsViewStrings.appearance,
+                            value: ThemeManager.shared.currentTheme.displayName
+                        )
+                    }
                     
+                    // Notifications
                     Toggle(isOn: $notificationsEnabled) {
                         SettingsRow(
                             icon: "bell.fill",
@@ -193,6 +261,42 @@ struct SettingsMainView: View {
                     .tint(AppColors.primary)
                 } header: {
                     Text(SettingsViewStrings.app)
+                }
+
+                
+                // Legal Section
+                Section {
+                    Button {
+                        showTerms = true
+                    } label: {
+                        SettingsRow(
+                            icon: "doc.text.fill",
+                            iconColor: .gray,
+                            title: SettingsViewStrings.termsOfUse
+                        )
+                    }
+                    
+                    Button {
+                        showPrivacy = true
+                    } label: {
+                        SettingsRow(
+                            icon: "hand.raised.fill",
+                            iconColor: .blue,
+                            title: SettingsViewStrings.privacyPolicy
+                        )
+                    }
+                    
+                    Button {
+                        showContact = true
+                    } label: {
+                        SettingsRow(
+                            icon: "envelope.fill",
+                            iconColor: .orange,
+                            title: SettingsViewStrings.contactUs
+                        )
+                    }
+                } header: {
+                    Text(SettingsViewStrings.legal)
                 }
                 
                 // Storage Section
@@ -256,6 +360,27 @@ struct SettingsMainView: View {
                             title: SettingsViewStrings.shareApp
                         )
                     }
+                    
+                    // Restore Purchases
+                    Button {
+                        Task {
+                            await restorePurchases()
+                        }
+                    } label: {
+                        HStack {
+                            SettingsRow(
+                                icon: "arrow.clockwise",
+                                iconColor: .purple,
+                                title: SettingsViewStrings.restorePurchases
+                            )
+                            
+                            if isRestoring {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                            }
+                        }
+                    }
+                    .disabled(isRestoring)
                 } header: {
                     Text(SettingsViewStrings.about)
                 }
@@ -270,12 +395,31 @@ struct SettingsMainView: View {
                     }
                 }
             }
+            // Sheets
             .sheet(isPresented: $showProfile) {
                 ProfileView()
             }
             .sheet(isPresented: $showLanguagePicker) {
                 LanguagePickerSheet()
             }
+            .sheet(isPresented: $showPremiumView) {
+                PremiumView()
+            }
+            .sheet(isPresented: $showTerms) {
+                WebViewScreen(title: SettingsViewStrings.termsOfUse, url: AppURLs.termsOfUse)
+            }
+            .sheet(isPresented: $showPrivacy) {
+                WebViewScreen(title: SettingsViewStrings.privacyPolicy, url: AppURLs.privacyPolicy)
+            }
+            .sheet(isPresented: $showContact) {
+                WebViewScreen(title: SettingsViewStrings.contactUs, url: AppURLs.contactUs)
+            }
+            
+            .sheet(isPresented: $showThemePicker) {
+                ThemePickerSheet()
+            }
+            
+            // Alerts
             .alert(SettingsViewStrings.deleteAllTitle, isPresented: $showDeleteAlert) {
                 Button(SettingsViewStrings.cancel, role: .cancel) { }
                 Button(SettingsViewStrings.delete, role: .destructive) {
@@ -292,12 +436,122 @@ struct SettingsMainView: View {
             } message: {
                 Text(SettingsViewStrings.resetMessage)
             }
+            .alert(SettingsViewStrings.restoreSuccess, isPresented: $showRestoreSuccess) {
+                Button("OK", role: .cancel) {}
+            }
+            .alert(SettingsViewStrings.restoreError, isPresented: $showRestoreError) {
+                Button("OK", role: .cancel) {}
+            }
         }
+    }
+    
+    // ═══════════════════════════════════════════
+    // MARK: - ✅ Premium Card Button
+    // ═══════════════════════════════════════════
+    private var premiumCardButton: some View {
+        Button {
+            showPremiumView = true
+        } label: {
+            if purchaseManager.isPremium {
+                // Premium Active Card
+                HStack(spacing: 14) {
+                    // Crown Icon
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [.yellow, .orange],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 50, height: 50)
+                        
+                        Image(systemName: "crown.fill")
+                            .font(.system(size: 22))
+                            .foregroundStyle(.white)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(SettingsViewStrings.youArePremium)
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(.white)
+                        
+                        Text(SettingsViewStrings.enjoyFeatures)
+                            .font(.system(size: 13))
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(.yellow)
+                }
+                .padding(16)
+                .background(
+                    LinearGradient(
+                        colors: [Color(hex: "1A1A2E"), Color(hex: "16213E")],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            } else {
+                // Upgrade Card
+                HStack(spacing: 14) {
+                    // Crown Icon with glow
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [.yellow, .orange],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 50, height: 50)
+                            .shadow(color: .yellow.opacity(0.4), radius: 8)
+                        
+                        Image(systemName: "crown.fill")
+                            .font(.system(size: 22))
+                            .foregroundStyle(.white)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(SettingsViewStrings.upgradeToPremium)
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(.white)
+                        
+                        Text(SettingsViewStrings.unlockFeatures)
+                            .font(.system(size: 13))
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+                .padding(16)
+                .background(
+                    LinearGradient(
+                        colors: [AppColors.primary, AppColors.primary.opacity(0.8)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
     }
     
     // MARK: - Methods
     private func calculateStorageUsed() -> String {
-        // حساب المساحة المستخدمة تقريبياً
         let defaults = UserDefaults.standard
         var totalSize: Int64 = 0
         
@@ -313,16 +567,31 @@ struct SettingsMainView: View {
     }
     
     private func deleteAllData() {
-        // حذف جميع البيانات من UserDefaults
         let domain = Bundle.main.bundleIdentifier!
         UserDefaults.standard.removePersistentDomain(forName: domain)
         UserDefaults.standard.synchronize()
     }
     
     private func resetSettings() {
-        // إعادة ضبط الإعدادات فقط
         UserDefaults.standard.set(true, forKey: "notificationsEnabled")
     }
+    
+    private func restorePurchases() async {
+        isRestoring = true
+        
+        let success = await purchaseManager.restorePurchases()
+        
+        await MainActor.run {
+            isRestoring = false
+            if success {
+                showRestoreSuccess = true
+            } else {
+                showRestoreError = true
+            }
+        }
+    }
+    
+    
 }
 
 // MARK: - Settings Row
@@ -369,40 +638,59 @@ struct SettingsRow: View {
         .contentShape(Rectangle())
     }
 }
-/*
-// MARK: - Language Picker Sheet (moved here for convenience)
-struct LanguagePickerSheet: View {
+
+// MARK: - Theme Picker Sheet
+struct ThemePickerSheet: View {
     
     @Environment(\.dismiss) private var dismiss
+    @State private var selectedTheme = ThemeManager.shared.currentTheme
+    
+    private var isArabic: Bool {
+        LocalizationManager.shared.isArabic
+    }
     
     var body: some View {
         NavigationStack {
             List {
-                ForEach(Language.allCases) { language in
+                ForEach(AppThemeMode.allCases) { theme in
                     Button {
-                        LocalizationManager.shared.setLanguage(language)
-                        dismiss()
+                        selectedTheme = theme
+                        ThemeManager.shared.setTheme(theme)
                     } label: {
-                        HStack {
-                            Text(language.flagEmoji)
-                            Text(language.nativeName)
+                        HStack(spacing: 14) {
+                            // Icon
+                            Image(systemName: theme.icon)
+                                .font(.system(size: 18))
+                                .foregroundStyle(iconColor(for: theme))
+                                .frame(width: 32, height: 32)
+                                .background(iconColor(for: theme).opacity(0.15))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                            
+                            // Name
+                            Text(theme.displayName)
+                                .font(AppFonts.body())
                                 .foregroundStyle(AppColors.textPrimary)
                             
                             Spacer()
                             
-                            if LocalizationManager.shared.currentLanguage == language {
+                            // Checkmark
+                            if selectedTheme == theme {
                                 Image(systemName: "checkmark")
+                                    .font(.system(size: 14, weight: .semibold))
                                     .foregroundStyle(AppColors.primary)
                             }
                         }
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
                 }
             }
-            .navigationTitle(LocalizationManager.shared.isArabic ? "اللغة" : "Language")
+            .listStyle(.insetGrouped)
+            .navigationTitle(isArabic ? "المظهر" : "Appearance")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(LocalizationManager.shared.isArabic ? "تم" : "Done") {
+                    Button(isArabic ? "تم" : "Done") {
                         dismiss()
                     }
                 }
@@ -410,8 +698,16 @@ struct LanguagePickerSheet: View {
         }
         .presentationDetents([.medium])
     }
+    
+    private func iconColor(for theme: AppThemeMode) -> Color {
+        switch theme {
+        case .system: return .blue
+        case .dark: return .purple
+        case .light: return .orange
+        }
+    }
 }
- */
+
 
 // MARK: - Preview
 #Preview {

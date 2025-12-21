@@ -4,35 +4,32 @@
 //
 //  Path: Seerati/Managers/PurchaseManager.swift
 //
-//  ─────────────────────────────────────────────
-//  AR: إدارة المشتريات والاشتراكات
-//  EN: Purchases and subscriptions management
-//  ─────────────────────────────────────────────
+//  ─────────────────────────────────────────────────
+//  AR: مدير المشتريات داخل التطبيق - محدث
+//  EN: In-App Purchases Manager - Updated
+//  ─────────────────────────────────────────────────
 
 import Foundation
 import StoreKit
 
 // MARK: - Product IDs
 enum ProductID {
+    // ✅ الاشتراكات
     static let premiumMonthly = "com.seerati.premium.monthly"
     static let premiumYearly = "com.seerati.premium.yearly"
     
-    // Template IDs
-    static let templateMonoFocus = "com.seerati.template.mono_focus"
-    static let templateDarkSidebar = "com.seerati.template.dark_sidebar"
-    static let templateExecutive = "com.seerati.template.executive"
-    static let templateSerifClassic = "com.seerati.template.serif_classic"
-    static let templateBoldType = "com.seerati.template.bold_type"
-    static let templateSplitColumn = "com.seerati.template.split_column"
-    static let templateModernist = "com.seerati.template.the_modernist"
+    // ✅ Lifetime (Non-Consumable)
+    static let premiumLifetime = "com.seerati.premium.lifetime"
     
-    static func templateProductId(for templateId: String) -> String {
-        return "com.seerati.template.\(templateId)"
-    }
+    // القوالب (Non-Consumable)
+    static let templateDarkSidebar = "com.seerati.template.darksidebar"
+    static let templateExecutive = "com.seerati.template.executive"
+    static let templateModernist = "com.seerati.template.modernist"
 }
 
 // MARK: - Purchase Manager
 @Observable
+@MainActor
 final class PurchaseManager {
     
     // MARK: - Singleton
@@ -41,162 +38,310 @@ final class PurchaseManager {
     // MARK: - Properties
     
     /// هل المستخدم Premium؟
-    var isPremium: Bool {
-        get { UserDefaults.standard.bool(forKey: Keys.isPremium) }
-        set { UserDefaults.standard.set(newValue, forKey: Keys.isPremium) }
-    }
+    private(set) var isPremium: Bool = false
+    
+    /// نوع الاشتراك الحالي
+    private(set) var subscriptionType: SubscriptionType = .none
     
     /// القوالب المشتراة
-    var purchasedTemplates: Set<String> {
-        get {
-            let array = UserDefaults.standard.stringArray(forKey: Keys.purchasedTemplates) ?? []
-            return Set(array)
-        }
-        set {
-            UserDefaults.standard.set(Array(newValue), forKey: Keys.purchasedTemplates)
-        }
-    }
+    private(set) var purchasedTemplates: Set<String> = []
     
-    /// عدد التصديرات هذا الشهر
-    var exportsThisMonth: Int {
-        get { UserDefaults.standard.integer(forKey: Keys.exportsThisMonth) }
-        set { UserDefaults.standard.set(newValue, forKey: Keys.exportsThisMonth) }
-    }
+    /// عدد التصديرات المتبقية للمستخدم المجاني
+    private(set) var remainingExports: Int = 3
     
-    /// شهر آخر تصدير
-    var lastExportMonth: Int {
-        get { UserDefaults.standard.integer(forKey: Keys.lastExportMonth) }
-        set { UserDefaults.standard.set(newValue, forKey: Keys.lastExportMonth) }
-    }
+    /// الحد الأقصى للتصديرات المجانية
+    let freeExportLimit: Int = 3
     
-    /// الحد الأقصى للتصديرات الشهرية (مجاني)
-    let freeExportLimit = 3
+    // MARK: - Products
+    private var products: [Product] = []
     
-    /// سعر القالب
-    let templatePrice = "9.99"
-    
-    /// سعر Premium الشهري
-    let premiumMonthlyPrice = "19.99"
-    
-    /// سعر Premium السنوي
-    let premiumYearlyPrice = "99.99"
-    
-    // MARK: - Keys
-    private enum Keys {
-        static let isPremium = "is_premium_user"
-        static let purchasedTemplates = "purchased_templates"
-        static let exportsThisMonth = "exports_this_month"
-        static let lastExportMonth = "last_export_month"
-    }
+    // MARK: - Prices (للعرض)
+    var premiumMonthlyPrice: String = "9.99"
+    var premiumYearlyPrice: String = "49.99"
+    var premiumLifetimePrice: String = "99.99"
     
     // MARK: - Init
     private init() {
-        checkMonthReset()
-    }
-    
-    // MARK: - Template Access
-    
-    /// هل القالب متاح للمستخدم؟
-    func isTemplateAvailable(_ templateId: String) -> Bool {
-        // القالب المجاني
-        if templateId == "swiss_minimal" {
-            return true
+        // تحميل الحالة المحفوظة
+        loadSavedState()
+        
+        // بدء مراقبة المعاملات
+        Task {
+            await loadProducts()
+            await updatePurchaseStatus()
+            await listenForTransactions()
         }
-        
-        // Premium يملك كل القوالب
-        if isPremium {
-            return true
-        }
-        
-        // تحقق من الشراء الفردي
-        return purchasedTemplates.contains(templateId)
     }
     
-    /// شراء قالب
-    func purchaseTemplate(_ templateId: String) async -> Bool {
-        // TODO: تنفيذ StoreKit 2 الفعلي
-        // حالياً نحاكي الشراء
-        
-        // محاكاة تأخير الشبكة
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
-        
-        // إضافة القالب للمشتريات
-        var templates = purchasedTemplates
-        templates.insert(templateId)
-        purchasedTemplates = templates
-        
-        return true
-    }
-    
-    /// شراء Premium
-    func purchasePremium(yearly: Bool) async -> Bool {
-        // TODO: تنفيذ StoreKit 2 الفعلي
-        
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
-        isPremium = true
-        return true
-    }
-    
-    /// استعادة المشتريات
-    func restorePurchases() async -> Bool {
-        // TODO: تنفيذ StoreKit 2 الفعلي
-        
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
-        return true
-    }
-    
-    // MARK: - Export Limit
+    // MARK: - Computed Properties
     
     /// هل يمكن التصدير؟
     var canExport: Bool {
-        if isPremium { return true }
-        checkMonthReset()
-        return exportsThisMonth < freeExportLimit
+        isPremium || remainingExports > 0
     }
     
-    /// التصديرات المتبقية
-    var remainingExports: Int {
-        if isPremium { return -1 } // غير محدود
-        checkMonthReset()
-        return max(0, freeExportLimit - exportsThisMonth)
+    /// هل يجب إضافة علامة مائية؟
+    var shouldAddWatermark: Bool {
+        !isPremium
     }
+    
+    /// نص العلامة المائية
+    var watermarkText: String {
+        "Made with Seerati"
+    }
+    
+    // MARK: - Load Products
+    func loadProducts() async {
+        do {
+            let productIDs = [
+                ProductID.premiumMonthly,
+                ProductID.premiumYearly,
+                ProductID.premiumLifetime
+            ]
+            
+            products = try await Product.products(for: productIDs)
+            
+            // تحديث الأسعار
+            for product in products {
+                let price = product.displayPrice
+                switch product.id {
+                case ProductID.premiumMonthly:
+                    premiumMonthlyPrice = price
+                case ProductID.premiumYearly:
+                    premiumYearlyPrice = price
+                case ProductID.premiumLifetime:
+                    premiumLifetimePrice = price
+                default:
+                    break
+                }
+            }
+        } catch {
+            print("❌ Failed to load products: \(error)")
+        }
+    }
+    
+    // MARK: - Purchase Methods
+    
+    /// شراء اشتراك شهري
+    func purchaseMonthly() async -> Bool {
+        guard let product = products.first(where: { $0.id == ProductID.premiumMonthly }) else {
+            return false
+        }
+        return await purchase(product)
+    }
+    
+    /// شراء اشتراك سنوي
+    func purchaseYearly() async -> Bool {
+        guard let product = products.first(where: { $0.id == ProductID.premiumYearly }) else {
+            return false
+        }
+        return await purchase(product)
+    }
+    
+    /// شراء Lifetime
+    func purchaseLifetime() async -> Bool {
+        guard let product = products.first(where: { $0.id == ProductID.premiumLifetime }) else {
+            return false
+        }
+        return await purchase(product)
+    }
+    
+    /// شراء Premium (للتوافق مع الكود القديم)
+    func purchasePremium(yearly: Bool) async -> Bool {
+        if yearly {
+            return await purchaseYearly()
+        } else {
+            return await purchaseMonthly()
+        }
+    }
+    
+    /// شراء منتج
+    private func purchase(_ product: Product) async -> Bool {
+        do {
+            let result = try await product.purchase()
+            
+            switch result {
+            case .success(let verification):
+                let transaction = try checkVerified(verification)
+                await updatePurchaseStatus()
+                await transaction.finish()
+                return true
+                
+            case .pending:
+                return false
+                
+            case .userCancelled:
+                return false
+                
+            @unknown default:
+                return false
+            }
+        } catch {
+            print("❌ Purchase failed: \(error)")
+            return false
+        }
+    }
+    
+    // MARK: - Restore Purchases
+    func restorePurchases() async -> Bool {
+        do {
+            try await AppStore.sync()
+            await updatePurchaseStatus()
+            return isPremium
+        } catch {
+            print("❌ Restore failed: \(error)")
+            return false
+        }
+    }
+    
+    // MARK: - Update Purchase Status
+    func updatePurchaseStatus() async {
+        var hasPremium = false
+        var subType: SubscriptionType = .none
+        
+        // التحقق من الاشتراكات النشطة
+        for await result in Transaction.currentEntitlements {
+            guard case .verified(let transaction) = result else {
+                continue
+            }
+            
+            switch transaction.productID {
+            case ProductID.premiumMonthly:
+                hasPremium = true
+                subType = .monthly
+                
+            case ProductID.premiumYearly:
+                hasPremium = true
+                subType = .yearly
+                
+            case ProductID.premiumLifetime:
+                hasPremium = true
+                subType = .lifetime
+                
+            default:
+                // القوالب
+                if transaction.productID.contains("template") {
+                    purchasedTemplates.insert(transaction.productID)
+                }
+            }
+        }
+        
+        isPremium = hasPremium
+        subscriptionType = subType
+        saveState()
+    }
+    
+    // MARK: - Listen for Transactions
+    private func listenForTransactions() async {
+        for await result in Transaction.updates {
+            guard case .verified(let transaction) = result else {
+                continue
+            }
+            
+            await updatePurchaseStatus()
+            await transaction.finish()
+        }
+    }
+    
+    // MARK: - Verify Transaction
+    private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
+        switch result {
+        case .unverified:
+            throw PurchaseError.verification
+        case .verified(let safe):
+            return safe
+        }
+    }
+    
+    // MARK: - Export Management
     
     /// تسجيل تصدير
     func recordExport() {
         guard !isPremium else { return }
-        checkMonthReset()
-        exportsThisMonth += 1
-    }
-    
-    /// التحقق من إعادة تعيين الشهر
-    private func checkMonthReset() {
-        let currentMonth = Calendar.current.component(.month, from: Date())
-        if lastExportMonth != currentMonth {
-            exportsThisMonth = 0
-            lastExportMonth = currentMonth
+        
+        if remainingExports > 0 {
+            remainingExports -= 1
+            saveState()
         }
     }
     
-    // MARK: - Watermark
-    
-    /// هل يجب إضافة علامة مائية؟
-    var shouldAddWatermark: Bool {
-        return !isPremium
+    /// إعادة تعيين التصديرات (للاختبار)
+    func resetExports() {
+        remainingExports = freeExportLimit
+        saveState()
     }
     
-    /// نص العلامة المائية
-    let watermarkText = "Made with Seerati"
+    // MARK: - Persistence
+    
+    private func saveState() {
+        UserDefaults.standard.set(isPremium, forKey: "isPremium")
+        UserDefaults.standard.set(subscriptionType.rawValue, forKey: "subscriptionType")
+        UserDefaults.standard.set(remainingExports, forKey: "remainingExports")
+        UserDefaults.standard.set(Array(purchasedTemplates), forKey: "purchasedTemplates")
+    }
+    
+    private func loadSavedState() {
+        isPremium = UserDefaults.standard.bool(forKey: "isPremium")
+        
+        if let typeString = UserDefaults.standard.string(forKey: "subscriptionType"),
+           let type = SubscriptionType(rawValue: typeString) {
+            subscriptionType = type
+        }
+        
+        remainingExports = UserDefaults.standard.integer(forKey: "remainingExports")
+        if remainingExports == 0 && !UserDefaults.standard.bool(forKey: "hasUsedExports") {
+            remainingExports = freeExportLimit
+        }
+        
+        if let templates = UserDefaults.standard.array(forKey: "purchasedTemplates") as? [String] {
+            purchasedTemplates = Set(templates)
+        }
+    }
+    
+    // MARK: - Debug (للاختبار)
+    #if DEBUG
+    func setDebugPremium(_ value: Bool) {
+        isPremium = value
+        subscriptionType = value ? .lifetime : .none
+        saveState()
+    }
+    #endif
 }
 
-// MARK: - Template Extension
-extension Template {
-    /// هل القالب متاح للمستخدم الحالي؟
-    var isAvailable: Bool {
-        PurchaseManager.shared.isTemplateAvailable(id)
-    }
+// MARK: - Subscription Type
+enum SubscriptionType: String {
+    case none
+    case monthly
+    case yearly
+    case lifetime
     
-    /// هل يحتاج شراء؟
-    var needsPurchase: Bool {
-        isPremium && !isAvailable
+    var displayName: String {
+        switch self {
+        case .none: return ""
+        case .monthly:
+            return LocalizationManager.shared.isArabic ? "شهري" : "Monthly"
+        case .yearly:
+            return LocalizationManager.shared.isArabic ? "سنوي" : "Yearly"
+        case .lifetime:
+            return LocalizationManager.shared.isArabic ? "مدى الحياة" : "Lifetime"
+        }
+    }
+}
+
+// MARK: - Purchase Error
+enum PurchaseError: Error {
+    case verification
+    case productNotFound
+    case purchaseFailed
+    
+    var localizedDescription: String {
+        switch self {
+        case .verification:
+            return "Transaction verification failed"
+        case .productNotFound:
+            return "Product not found"
+        case .purchaseFailed:
+            return "Purchase failed"
+        }
     }
 }
