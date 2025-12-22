@@ -99,7 +99,7 @@ extension Template {
         Template(
             id: "swiss_minimal",
             name: "Swiss Minimal",
-            nameArabic: "سويسري بسيط",
+            nameArabic: "كلاسيكي بسيط",
             description: "Professional",
             descriptionArabic: "احترافي",
             category: .minimal,

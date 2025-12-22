@@ -9,7 +9,6 @@
 //  EN: Main home screen - displays CVs list
 //  ─────────────────────────────────────────────
 
-
 import SwiftUI
 
 // MARK: - Home View
@@ -31,8 +30,13 @@ struct HomeView: View {
     @State private var showContactUs = false
     @State private var showAbout = false
     
+    @State private var shouldOpenCreateCV = false
+    
     // ✅ واجهة Premium
     @State private var showPremiumView = false
+    
+    // ✅ معاينة القالب
+    @State private var selectedTemplateForPreview: Template?
     
     // ✅ حالة البانر
     @State private var isBannerLoaded = false
@@ -87,6 +91,25 @@ struct HomeView: View {
         .sheet(isPresented: $showPremiumView) {
             PremiumView()
         }
+        // ✅ معاينة القالب
+        .sheet(item: $selectedTemplateForPreview) { template in
+            TemplatePreviewSheet(template: template)
+        }
+        
+        .onChange(of: selectedTemplateForPreview) { oldValue, newValue in
+            // ✅ عندما يتم إغلاق الـ sheet (newValue = nil) وكان هناك قالب مختار
+            if newValue == nil && oldValue != nil {
+                // تحقق إذا تم اختيار القالب (محفوظ في UserDefaults)
+                if let savedId = UserDefaults.standard.string(forKey: "selectedTemplateId"),
+                   savedId == oldValue?.id {
+                    // افتح إنشاء CV بعد تأخير قصير
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        showCreateCV = true
+                    }
+                }
+            }
+        }
+        
         .confirmationDialog(
             "CV Options",
             isPresented: $viewModel.showActionSheet,
@@ -178,7 +201,7 @@ struct HomeView: View {
             
             Spacer()
             
-            Text(Language.english.isRTL ? "Seerati" : "سيرتي")
+            Text(LocalizationManager.shared.isArabic ? "سيرتي" : "Seerati")
                 .font(AppFonts.title2())
                 .foregroundStyle(AppColors.primary)
             
@@ -208,7 +231,6 @@ struct HomeView: View {
             .padding(.horizontal, AppSpacing.screenHorizontal)
             
             TemplateCarousel(templates: Template.allTemplates) { template in
-                // ✅ معالجة اختيار القالب
                 handleTemplateSelection(template)
             }
         }
@@ -216,20 +238,15 @@ struct HomeView: View {
     
     // ✅ MARK: - Handle Template Selection
     private func handleTemplateSelection(_ template: Template) {
-        if template.isPremium {
-            // القالب مدفوع - تحقق من الحالة
-            if PurchaseManager.shared.isPremium {
-                // المستخدم Premium - استخدم القالب
-                UserDefaults.standard.set(template.id, forKey: "selectedTemplateId")
-                print("✅ Premium template selected: \(template.name)")
-            } else {
-                // المستخدم مجاني - اعرض واجهة الاشتراك
+        // ✅ عرض إعلان بيني أولاً
+        AdMobManager.shared.showInterstitial {
+            if template.isPremium && !PurchaseManager.shared.isPremium {
+                // القالب مدفوع - اعرض Premium
                 showPremiumView = true
+            } else {
+                // القالب متاح - افتح المعاينة
+                selectedTemplateForPreview = template
             }
-        } else {
-            // القالب مجاني - استخدمه مباشرة
-            UserDefaults.standard.set(template.id, forKey: "selectedTemplateId")
-            print("✅ Free template selected: \(template.name)")
         }
     }
     

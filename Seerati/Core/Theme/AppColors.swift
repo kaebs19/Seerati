@@ -8,86 +8,110 @@
 import SwiftUI
 
 // MARK: - App Colors
+
 /// ألوان التطبيق الرئيسية مستوحاة من التصميم
 struct AppColors {
     
     // MARK: - Primary Colors
-    /// اللون الأخضر الرئيسي
     static let primary = Color(hex: "4ADE80")
-    
-    /// اللون الأخضر الفاتح للتدرجات
     static let primaryLight = Color(hex: "86EFAC")
-    
-    /// اللون الأخضر الداكن
     static let primaryDark = Color(hex: "22C55E")
     
-    // MARK: - Background Colors
-    /// خلفية التطبيق الرئيسية
-    static let background = Color(hex: "0D1F17")
+    // MARK: - Background Colors (متكيفة)
+    static var background: Color {
+        Color(UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor(hex: "0D1F17")
+                : UIColor(hex: "F8F9FA")
+        })
+    }
     
-    /// خلفية البطاقات والعناصر
-    static let surface = Color(hex: "1A3D2E")
+    static var surface: Color {
+        Color(UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor(hex: "1A3D2E")
+                : UIColor.white
+        })
+    }
     
-    /// خلفية حقول الإدخال
-    static let inputBackground = Color(hex: "1E4D3D")
+    static var inputBackground: Color {
+        Color(UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor(hex: "1E4D3D")
+                : UIColor(hex: "F3F4F6")
+        })
+    }
     
-    /// خلفية ثانوية
-    static let surfaceLight = Color(hex: "2D5A47")
+    static var surfaceLight: Color {
+        Color(UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor(hex: "2D5A47")
+                : UIColor(hex: "E5E7EB")
+        })
+    }
     
-    // MARK: - Text Colors
-    /// لون النص الرئيسي
-    static let textPrimary = Color.white
+    // MARK: - Text Colors (متكيفة) ✅
+    static var textPrimary: Color {
+        Color(UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor.white
+                : UIColor(hex: "111827")
+        })
+    }
     
-    /// لون النص الثانوي
-    static let textSecondary = Color(hex: "9CA3AF")
+    static var textSecondary: Color {
+        Color(UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor(hex: "9CA3AF")
+                : UIColor(hex: "6B7280")
+        })
+    }
     
-    /// لون النص المعطل
-    static let textDisabled = Color(hex: "6B7280")
+    static var textDisabled: Color {
+        Color(UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor(hex: "6B7280")
+                : UIColor(hex: "9CA3AF")
+        })
+    }
     
-    /// لون النص على الخلفية الخضراء
     static let textOnPrimary = Color(hex: "0D1F17")
     
     // MARK: - Semantic Colors
-    /// لون النجاح
     static let success = Color(hex: "4ADE80")
-    
-    /// لون التحذير
     static let warning = Color(hex: "FBBF24")
-    
-    /// لون الخطأ
     static let error = Color(hex: "EF4444")
-    
-    /// لون المعلومات
     static let info = Color(hex: "3B82F6")
     
-    // MARK: - Border Colors
-    /// لون الحدود الافتراضي
-    static let border = Color(hex: "2D5A47")
+    // MARK: - Border Colors (متكيفة)
+    static var border: Color {
+        Color(UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor(hex: "2D5A47")
+                : UIColor(hex: "E5E7EB")
+        })
+    }
     
-    /// لون الحدود عند التركيز
     static let borderFocused = Color(hex: "4ADE80")
     
     // MARK: - Overlay Colors
-    /// طبقة شفافة داكنة
     static let overlayDark = Color.black.opacity(0.5)
-    
-    /// طبقة شفافة فاتحة
     static let overlayLight = Color.white.opacity(0.1)
     
     // MARK: - Gradient
-    /// تدرج الزر الرئيسي
     static let primaryGradient = LinearGradient(
         colors: [primaryLight, primary],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
     
-    /// تدرج الخلفية
-    static let backgroundGradient = LinearGradient(
-        colors: [background, surface],
-        startPoint: .top,
-        endPoint: .bottom
-    )
+    static var backgroundGradient: LinearGradient {
+        LinearGradient(
+            colors: [background, surface],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
 }
 
 // MARK: - Color Extension for Hex
